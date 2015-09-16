@@ -68,21 +68,30 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
         # plot normalized gauss function on frame
         norm = gaus.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-        gaus.plotOn(lframe, rf.Normalization(norm, ROOT.RooAbsReal.NumEvent))
+        plot_cmd_list = ROOT.RooLinkedList(2)
+        plot_cmd_list.Add(rf.Normalization(norm, ROOT.RooAbsReal.NumEvent))
+        plot_cmd_list.Add(rf.LineColor(ROOT.kRed))
+        gaus.plotOn(lframe, plot_cmd_list)
 
         if num_bosons > 1:
             mean2.setVal(list_values_mass[1][i])
             width2.setVal(list_values_width[1][i])
             # plot normalized gauss function on frame
             norm2 = gaus2.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-            gaus2.plotOn(lframe, rf.Normalization(norm2, ROOT.RooAbsReal.NumEvent))
+            plot_cmd_list = ROOT.RooLinkedList(2)
+            plot_cmd_list.Add(rf.Normalization(norm2, ROOT.RooAbsReal.NumEvent))
+            plot_cmd_list.Add(rf.LineColor(ROOT.kGreen))
+            gaus2.plotOn(lframe, plot_cmd_list)
 
         if num_bosons > 2:
             mean3.setVal(list_values_mass[2][i])
             width3.setVal(list_values_width[2][i])
             # plot normalized gauss function on frame
             norm3 = gaus3.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-            gaus3.plotOn(lframe, rf.Normalization(norm3, ROOT.RooAbsReal.NumEvent))
+            plot_cmd_list = ROOT.RooLinkedList(2)
+            plot_cmd_list.Add(rf.Normalization(norm3, ROOT.RooAbsReal.NumEvent))
+            plot_cmd_list.Add(rf.LineColor(ROOT.kBlue))
+            gaus3.plotOn(lframe, plot_cmd_list)
 
         # remove y axis title
         lframe.SetYTitle("")
@@ -101,5 +110,5 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
 
 if __name__ == '__main__':
-    animate_higgs_peak([[10, 20, 40], [7, 15, 24]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015]], [60, 70, 80],
-                       ['H', 'h', 'A'], filename='test.gif', duration=1000)
+    animate_higgs_peak([[10, 20, 40], [7, 15, 24], [9, 17, 26]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015],
+                        [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], filename='test.gif', duration=1000)
