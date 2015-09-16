@@ -62,3 +62,6 @@ target/
 
 ### IDEA
 .idea/
+
+### output/image files
+*.gif
