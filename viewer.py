@@ -19,8 +19,7 @@ def main():
     parser.add_argument("-d", "--duration", required=True, help="animated GIF duration in milliseconds", type=int)
     parser.add_argument("-o", "--output_filename", required=False, help="GIF output filename", type=str)
     parser.add_argument("-s", "--skip_frames", required=False, help="only render every nth frame (default=1)", type=int)
-    parser.add_argument("-Hb", "--higgs_boson", required=True, help="disintegrating Higgs boson",
-                        choices=["h", "H", "A"])
+    parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True, help="disintegrating Higgs boson(s) (H A h)")
     args = parser.parse_args()
 
     # split m_A range into minimum and maximum value, cast to int
@@ -31,45 +30,62 @@ def main():
     # store args
     root_file_name = args.root_file_name
     tan_beta = args.tangent_beta
-    higgs_boson = args.higgs_boson
     output_filename = args.output_filename
     skip_frames = args.skip_frames
     duration = args.duration
+    list_higgs_bosons = args.list_higgs_bosons
 
-    # construct dataset name
-    dataset_mass_name = "m_" + higgs_boson
-    dataset_width_name = "width_" + higgs_boson
-
-    # open root file
-    f = ROOT.TFile(root_file_name)
-
-    # create mass and width list
-    t = f.Get(dataset_mass_name)
-    u = f.Get(dataset_width_name)
-    # read values from root file into list
-    values_mass = []
-    values_width = []
+    list_values_mass = []
+    list_values_width = []
     values_ma = []
-    # loop trough the m_A range
-    for i in range(ma_min, ma_max, 1):
-        j = i - ma_min
-        values_mass.append(t.Interpolate(i, tan_beta))
-        values_width.append(u.Interpolate(i, tan_beta))
-        values_ma.append(i)
-        # for debugging
-        print(values_mass[j])
-        print(values_width[j])
+
+    # loop through the Higgs bosons list
+    for i in range(0, len(list_higgs_bosons)):
+
+        higgs_boson = list_higgs_bosons[i]
+
+        # construct dataset name
+        dataset_mass_name = "m_" + higgs_boson
+        dataset_width_name = "width_" + higgs_boson
+
+        # open root file
+        f = ROOT.TFile(root_file_name)
+
+        # create mass and width list
+        t = f.Get(dataset_mass_name)
+        u = f.Get(dataset_width_name)
+        # read values from root file into list
+        values_mass = []
+        values_width = []
+        # loop trough the m_A range
+        for i in range(ma_min, ma_max, 1):
+            j = i - ma_min
+            values_mass.append(t.Interpolate(i, tan_beta))
+            values_width.append(u.Interpolate(i, tan_beta))
+            values_ma.append(i)
+
+        # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
+        if higgs_boson == 'A':
+            values_mass = values_ma
+
+        list_values_mass.append(values_mass)
+        list_values_width.append(values_width)
+
+    # for debugging
+    print(list_higgs_bosons)
+    print(list_values_width)
+    print(list_values_mass)
 
     if output_filename is not None and skip_frames is not None:
-        animate_higgs_peak(values_mass, values_width, values_ma, higgs_boson, duration=duration, skipframes=skip_frames,
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration, skipframes=skip_frames,
                            filename=output_filename)
     elif output_filename is not None:
-        animate_higgs_peak(values_mass, values_width, values_ma, higgs_boson, duration=duration,
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration,
                            filename=output_filename)
     elif skip_frames is not None:
-        animate_higgs_peak(values_mass, values_width, values_ma, higgs_boson, duration=duration, skipframes=skip_frames)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration, skipframes=skip_frames)
     else:
-        animate_higgs_peak(values_mass, values_width, values_ma, higgs_boson, duration=duration)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration)
 
 
 if __name__ == '__main__':
