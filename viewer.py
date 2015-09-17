@@ -19,7 +19,10 @@ def main():
     parser.add_argument("-d", "--duration", required=True, help="animated GIF duration in milliseconds", type=int)
     parser.add_argument("-o", "--output_filename", required=False, help="GIF output filename", type=str)
     parser.add_argument("-s", "--skip_frames", required=False, help="only render every nth frame (default=1)", type=int)
-    parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True, help="disintegrating Higgs boson(s) (H A h)")
+    parser.add_argument("-sgm", "--sigma_gaussian", required=True, type=float,
+                        help="sigma value for gaussian function inside vogtian function to blur the values")
+    parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True,
+                        help="disintegrating Higgs boson(s) (H A h)")
     args = parser.parse_args()
 
     # split m_A range into minimum and maximum value, cast to int
@@ -34,6 +37,7 @@ def main():
     skip_frames = args.skip_frames
     duration = args.duration
     list_higgs_bosons = args.list_higgs_bosons
+    sigma_gaussian = args.sigma_gaussian
 
     list_values_mass = []
     list_values_width = []
@@ -77,15 +81,17 @@ def main():
     print(list_values_mass)
 
     if output_filename is not None and skip_frames is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration, skipframes=skip_frames,
-                           filename=output_filename)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
+                           duration=duration, skipframes=skip_frames, filename=output_filename)
     elif output_filename is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration,
-                           filename=output_filename)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
+                           duration=duration, filename=output_filename)
     elif skip_frames is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration, skipframes=skip_frames)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
+                           duration=duration, skipframes=skip_frames)
     else:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, duration=duration)
+        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
+                           duration=duration)
 
 
 if __name__ == '__main__':
