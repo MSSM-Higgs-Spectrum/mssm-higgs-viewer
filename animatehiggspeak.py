@@ -111,8 +111,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         # draw frame
         lframe.Draw()
 
-        # draw legend
-        legend.Draw()
+        if num_bosons > 1:
+            # draw legend
+            legend.Draw()
 
         # animation delay in centiseconds (10ms)
         canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
