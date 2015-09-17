@@ -74,6 +74,11 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         gaus.plotOn(lframe, plot_cmd_list)
 
         if num_bosons > 1:
+            # Add legend
+            legend = ROOT.TLegend(0.80, 0.75, 0.9, 0.9)
+            legend_entry = legend.AddEntry(list_higgs_boson[0], list_higgs_boson[0], "l")
+            legend_entry.SetLineColor(ROOT.kRed)
+
             mean2.setVal(list_values_mass[1][i])
             width2.setVal(list_values_width[1][i])
             # plot normalized gauss function on frame
@@ -82,6 +87,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             plot_cmd_list.Add(rf.Normalization(norm2, ROOT.RooAbsReal.NumEvent))
             plot_cmd_list.Add(rf.LineColor(ROOT.kGreen))
             gaus2.plotOn(lframe, plot_cmd_list)
+            legend_entry = legend.AddEntry(list_higgs_boson[1], list_higgs_boson[1], "l")
+            legend_entry.SetLineColor(ROOT.kGreen)
 
         if num_bosons > 2:
             mean3.setVal(list_values_mass[2][i])
@@ -92,6 +99,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             plot_cmd_list.Add(rf.Normalization(norm3, ROOT.RooAbsReal.NumEvent))
             plot_cmd_list.Add(rf.LineColor(ROOT.kBlue))
             gaus3.plotOn(lframe, plot_cmd_list)
+            legend_entry = legend.AddEntry(list_higgs_boson[2], list_higgs_boson[2], "l")
+            legend_entry.SetLineColor(ROOT.kBlue)
 
         # remove y axis title
         lframe.SetYTitle("")
@@ -101,6 +110,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
         # draw frame
         lframe.Draw()
+
+        # draw legend
+        legend.Draw()
 
         # animation delay in centiseconds (10ms)
         canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
