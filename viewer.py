@@ -39,6 +39,15 @@ def main():
     list_higgs_bosons = args.list_higgs_bosons
     sigma_gaussian = args.sigma_gaussian
 
+     # check, if min and max values are in diagram range
+    if ma_min < 90 or ma_max > 2000:
+        raise argparse.ArgumentTypeError("m_A has to be in range of 90 - 2000")
+
+    # check sigma
+    if sigma_gaussian < 0.5 or sigma_gaussian > 60:
+        raise argparse.ArgumentTypeError("sigma_gaussian has to be in range of 0.5 - 60")
+
+
     list_values_mass = []
     list_values_width = []
     values_ma = []
