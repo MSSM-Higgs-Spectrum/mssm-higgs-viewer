@@ -19,8 +19,8 @@ def main():
     parser.add_argument("-d", "--duration", required=True, help="animated GIF duration in milliseconds", type=int)
     parser.add_argument("-o", "--output_filename", required=False, help="GIF output filename", type=str)
     parser.add_argument("-s", "--skip_frames", required=False, help="only render every nth frame (default=1)", type=int)
-    parser.add_argument("-sgm", "--sigma_gaussian", required=True, type=float,
-                        help="sigma value for gaussian function inside vogtian function to blur the values")
+    parser.add_argument("-sgm", "--sigma_gaussian", help="sigma value (as fixed value or in percent to mass) "
+                             "for gaussian function inside voigtian function to blur the values")
     parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True,
                         help="disintegrating Higgs boson(s) (H A h)")
     args = parser.parse_args()
@@ -39,14 +39,15 @@ def main():
     list_higgs_bosons = args.list_higgs_bosons
     sigma_gaussian = args.sigma_gaussian
 
+    if args.sigma_gaussian is not None:
+        sigma_gaussian = args.sigma_gaussian
+
      # check, if min and max values are in diagram range
     if ma_min < 90 or ma_max > 2000:
         raise argparse.ArgumentTypeError("m_A has to be in range of 90 - 2000")
 
-    # check sigma
-    if sigma_gaussian < 0.5 or sigma_gaussian > 60:
-        raise argparse.ArgumentTypeError("sigma_gaussian has to be in range of 0.5 - 60")
-
+    if tan_beta < 0.5 or tan_beta > 60:
+        raise argparse.ArgumentTypeError("tangent_beta has to be in range of 0.5 - 60")
 
     list_values_mass = []
     list_values_width = []
