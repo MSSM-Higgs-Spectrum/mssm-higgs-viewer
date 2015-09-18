@@ -11,7 +11,7 @@ def calc_x_max(x_list):
     return int(max(max(l) for l in x_list)) + 5
 
 
-def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian,
+def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
                        filename="animation.gif", duration=5000, skipframes=1):
     # remove gif file (if present)
     try:
@@ -27,88 +27,75 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
     rf = ROOT.RooFit
 
+    # suppress INFO:NumericIntegration log
+    ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
+
     # x axis range (enlarged by 5 (?))
     x_min = calc_x_min(list_values_mass)
     x_max = calc_x_max(list_values_mass)
-    x = ROOT.RooRealVar("x", "m", x_min, x_max)
+    x = ROOT.RooRealVar("x", "m / GeV", x_min, x_max)
 
-    frame = x.frame(rf.Bins(1))
+    frame = x.frame()
 
     if num_bosons > 1:
         title = "Higgs bosons peaks"
     else:
-        title = list_higgs_boson + " Higgs Boson peak"
+        title = list_higgs_boson[0] + " Higgs Boson peak"
     frame.SetTitle(title)
 
     canvas = ROOT.TCanvas("canvas", "canvas", 1300, 750)
 
-    sigma = ROOT.RooRealVar("sigma", "sigma", sigma_gaussian)
-    width = ROOT.RooRealVar("width", "width", 0)
-    mean = ROOT.RooRealVar("mean", "mean", 0)
-    pdf = ROOT.RooVoigtian("voigtian", "Voigtian", x, mean, width, sigma)
+    width = []
+    mean = []
+    pdf = []
+    sigma = []
 
-    if num_bosons > 1:
-        width2 = ROOT.RooRealVar("width", "width", 0)
-        mean2 = ROOT.RooRealVar("mean", "mean", 0)
-        pdf2 = ROOT.RooVoigtian("voigtian", "Voigtian", x, mean2, width2, sigma)
-
-    if num_bosons > 2:
-        width3 = ROOT.RooRealVar("width", "width", 0)
-        mean3 = ROOT.RooRealVar("mean", "mean", 0)
-        pdf3 = ROOT.RooVoigtian("voigtian", "Voigtian", x, mean3, width3, sigma)
+    for n in range(num_bosons):
+        width.append(ROOT.RooRealVar("width", "width", 0))
+        mean.append(ROOT.RooRealVar("mean", "mean", 0))
+        sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
+        pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
 
     for i in xrange(0, len(list_values_mass[0]), skipframes):
-        print i
         # create/clone new empty frame
         lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
 
         lframe.SetTitle(title + " (m_A=" + str(values_ma[i]) + ")")
 
-        mean.setVal(list_values_mass[0][i])
-        width.setVal(list_values_width[0][i])
+        norm = []
 
-        # plot normalized gauss function on frame
-        norm = pdf.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-        plot_cmd_list = ROOT.RooLinkedList(2)
-        plot_cmd_list.Add(rf.Normalization(norm, ROOT.RooAbsReal.NumEvent))
-        plot_cmd_list.Add(rf.LineColor(ROOT.kRed))
-        pdf.plotOn(lframe, plot_cmd_list)
-
-        if num_bosons > 1:
-            # Add legend
-            legend = ROOT.TLegend(0.80, 0.75, 0.9, 0.9)
-            legend_entry = legend.AddEntry(list_higgs_boson[0], list_higgs_boson[0], "l")
-            legend_entry.SetLineColor(ROOT.kRed)
-
-            mean2.setVal(list_values_mass[1][i])
-            width2.setVal(list_values_width[1][i])
+        for n in range(num_bosons):
+            mean[n].setVal(list_values_mass[n][i])
+            width[n].setVal(list_values_width[n][i])
+            if sigma_gaussian is None:
+                # default sigma is 20% of mean value
+                sigma[n].setVal(list_values_mass[n][i] * 0.2)
+            elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
+                # sigma can be specified in percent of mean value
+                sigma[n].setVal(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
             # plot normalized gauss function on frame
-
-            norm2 = pdf2.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-            plot_cmd_list = ROOT.RooLinkedList(2)
-            plot_cmd_list.Add(rf.Normalization(norm2, ROOT.RooAbsReal.NumEvent))
-            plot_cmd_list.Add(rf.LineColor(ROOT.kGreen))
-            pdf2.plotOn(lframe, plot_cmd_list)
-            legend_entry = legend.AddEntry(list_higgs_boson[1], list_higgs_boson[1], "l")
-            legend_entry.SetLineColor(ROOT.kGreen)
-
-        if num_bosons > 2:
-            mean3.setVal(list_values_mass[2][i])
-            width3.setVal(list_values_width[2][i])
-            # plot normalized gauss function on frame
-            norm3 = pdf3.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-            plot_cmd_list = ROOT.RooLinkedList(2)
-            plot_cmd_list.Add(rf.Normalization(norm3, ROOT.RooAbsReal.NumEvent))
-            plot_cmd_list.Add(rf.LineColor(ROOT.kBlue))
-            pdf3.plotOn(lframe, plot_cmd_list)
-            legend_entry = legend.AddEntry(list_higgs_boson[2], list_higgs_boson[2], "l")
-            legend_entry.SetLineColor(ROOT.kBlue)
+            # norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal())
+            norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x)).getVal())
+            # norm[n] = 100
+            plot_cmd_list = ROOT.RooLinkedList(3)
+            plot_cmd_list.Add(rf.Normalization(norm[n]))
+            plot_cmd_list.Add(rf.LineColor(n + 2))
+            plot_cmd_list.Add(rf.FillColor(n + 2))
+            pdf[n].plotOn(lframe, plot_cmd_list)
+            if num_bosons > 1:
+                if n == 0:
+                    # Add legend
+                    legend = ROOT.TLegend(0.70, 0.75, 0.9, 0.9)
+                legend_entry = legend.AddEntry(list_higgs_boson[n], list_higgs_boson[n]
+                                               + " (m = " + str(round(list_values_mass[n][i], 1))
+                                               + "; w = " + str(round(list_values_width[n][i], 4)) + ")", "l")
+                legend_entry.SetLineColor(n + 2)
 
         # remove y axis title
-        lframe.SetYTitle("")
+        lframe.SetYTitle("%")
 
         # set y axis maximum to 1
-        lframe.SetMaximum(1)
+        lframe.SetMaximum(100)
 
         # draw frame
         lframe.Draw()
@@ -119,6 +106,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
         # animation delay in centiseconds (10ms)
         canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
+
+        lframe.Delete()
 
     # infinite loop gif
     canvas.Print(filename + "++100++")
