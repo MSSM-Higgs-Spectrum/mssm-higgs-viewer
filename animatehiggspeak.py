@@ -1,6 +1,7 @@
 import ROOT
 import os
 import math
+import gc
 
 
 def calc_x_min(x_list):
@@ -13,6 +14,9 @@ def calc_x_max(x_list):
 
 def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
                        filename="animation.gif", duration=5000, skipframes=1):
+    # disable gc
+    gc.disable()
+
     # remove gif file (if present)
     try:
         os.remove(filename)
@@ -57,6 +61,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
 
     for i in xrange(0, len(list_values_mass[0]), skipframes):
+        # run garbage collector
+        print "gc: ", gc.collect()
+
         # create/clone new empty frame
         lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
 
@@ -111,6 +118,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
     # infinite loop gif
     canvas.Print(filename + "++100++")
+
+    # run garbage collector
+    print "gc: ", gc.collect()
 
 
 if __name__ == '__main__':
