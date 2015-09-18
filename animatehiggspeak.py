@@ -125,5 +125,5 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
 if __name__ == '__main__':
     animate_higgs_peak([[10, 20, 40], [7, 15, 24], [9, 17, 26]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015],
-                        [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], 1.0, filename='test.gif',
+                        [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], '10%', filename='test.gif',
                         duration=1000)
