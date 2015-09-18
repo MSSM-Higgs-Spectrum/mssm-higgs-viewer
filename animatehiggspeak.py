@@ -21,8 +21,7 @@ def perf_time_measure(start_time, comment=''):
 
 
 def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
-                       filename="animation.gif", duration=5000, skipframes=1):
-
+                       filename="animation.gif", duration=5000, skipframes=0, frame_time=20):
     global perf
     perf = time.time()
 
@@ -42,7 +41,13 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
     # calculate delay time per frame
     # one interval/frame per dataset
-    animation_delay = math.ceil(duration * skipframes / len(list_values_mass[0]))
+
+    ## animation_delay = math.ceil(duration * skip_frames / len(list_values_mass[0]))
+    # animation_delay = 4 -> 40ms per frame -> 25fps (frame_time = 40)
+    skip_frames = int(round(frame_time * len(list_values_mass[0]) / duration))
+    if skip_frames < 1:
+        # minimum
+        skip_frames = 1
 
     rf = ROOT.RooFit
 
@@ -86,7 +91,10 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     # performance time measurement
     perf = perf_time_measure(perf, 'before main loop')
 
-    for i in xrange(0, len(list_values_mass[0]), skipframes):
+    print 'Rendering', round(len(list_values_mass[0]) / skip_frames), 'frames ...'
+    print 'Animation time:', round(len(list_values_mass[0]) / skip_frames) * 40, 'ms'
+
+    for i in xrange(0, len(list_values_mass[0]), skip_frames):
         # performance time measurement
         perf = perf_time_measure(perf, 'loop begin')
 
@@ -151,7 +159,7 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         perf = perf_time_measure(perf, 'loop frame drawed')
 
         # animation delay in centiseconds (10ms)
-        canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
+        canvas.Print(filename + "+" + str(int(round(frame_time / 10))))
 
         # performance time measurement
         perf = perf_time_measure(perf, 'loop canvas printed')
