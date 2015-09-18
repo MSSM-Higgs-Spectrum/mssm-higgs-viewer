@@ -1,66 +1,129 @@
 import ROOT
 import os
 import math
+import gc
 
 
-def animate_higgs_peak(values_mass, values_width, values_ma, higgs_boson, filename="animation.gif", duration=5000,
-                       skipframes=1):
+def calc_x_min(x_list):
+    return int(min(min(l) for l in x_list)) - 5
+
+
+def calc_x_max(x_list):
+    return int(max(max(l) for l in x_list)) + 5
+
+
+def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
+                       filename="animation.gif", duration=5000, skipframes=1):
+    # disable gc
+    gc.disable()
+
     # remove gif file (if present)
     try:
         os.remove(filename)
     except OSError:
         pass
 
-    # x axis range (enlarged by 5 (?))
-    x_min = int(min(values_mass)) - 5
-    x_max = int(max(values_mass)) + 5
-
-    # debug output
-    print "x_min =", x_min, "x_max =", x_max
+    num_bosons = len(list_values_mass)
 
     # calculate delay time per frame
     # one interval/frame per dataset
-    animation_delay = math.ceil(duration * skipframes / len(values_mass))
-
-    width = ROOT.RooRealVar("width", "width", 0)
-    mean = ROOT.RooRealVar("mean", "mean", 0)
+    animation_delay = math.ceil(duration * skipframes / len(list_values_mass[0]))
 
     rf = ROOT.RooFit
 
-    x = ROOT.RooRealVar("x", "m_" + higgs_boson, x_min, x_max)
-    x_frame = x.frame(rf.Bins(1))
+    # suppress INFO:NumericIntegration log
+    ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
 
-    title = higgs_boson + " Higgs Boson peak"
-    x_frame.SetTitle(title)
+    # x axis range (enlarged by 5 (?))
+    x_min = calc_x_min(list_values_mass)
+    x_max = calc_x_max(list_values_mass)
+    x = ROOT.RooRealVar("x", "m / GeV", x_min, x_max)
 
-    canvas = ROOT.TCanvas("canvas", "canvas", 1000, 600)
+    frame = x.frame()
 
-    gaus = ROOT.RooBreitWigner("breitwigner", "BreitWigner", x, mean, width)
+    if num_bosons > 1:
+        title = "Higgs bosons peaks"
+    else:
+        title = list_higgs_boson[0] + " Higgs Boson peak"
+    frame.SetTitle(title)
 
-    print " len=", len(values_mass), " len=", len(values_width)
-    for i in xrange(0, len(values_mass), skipframes):
-        print i
+    canvas = ROOT.TCanvas("canvas", "canvas", 1300, 750)
+
+    width = []
+    mean = []
+    pdf = []
+    sigma = []
+
+    for n in range(num_bosons):
+        width.append(ROOT.RooRealVar("width", "width", 0))
+        mean.append(ROOT.RooRealVar("mean", "mean", 0))
+        sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
+        pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
+
+    for i in xrange(0, len(list_values_mass[0]), skipframes):
+        # run garbage collector
+        print "gc: ", gc.collect()
+
         # create/clone new empty frame
-        frame = x_frame.emptyClone(x_frame.GetName() + "_" + str(i))
+        lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
 
-        frame.SetTitle(title + " (m_A=" + str(values_ma[i]) + ")")
+        lframe.SetTitle(title + " (m_A=" + str(values_ma[i]) + ")")
 
-        mean.setVal(values_mass[i])
-        width.setVal(values_width[i])
+        norm = []
 
-        # plot normalized gauss function on frame
-        norm = gaus.createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal() / (x_max - x_min)
-        gaus.plotOn(frame, rf.Normalization(norm, ROOT.RooAbsReal.NumEvent))
+        for n in range(num_bosons):
+            mean[n].setVal(list_values_mass[n][i])
+            width[n].setVal(list_values_width[n][i])
+            if sigma_gaussian is None:
+                # default sigma is 20% of mean value
+                sigma[n].setVal(list_values_mass[n][i] * 0.2)
+            elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
+                # sigma can be specified in percent of mean value
+                sigma[n].setVal(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
+            # plot normalized gauss function on frame
+            # norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal())
+            norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x)).getVal())
+            # norm[n] = 100
+            plot_cmd_list = ROOT.RooLinkedList(3)
+            plot_cmd_list.Add(rf.Normalization(norm[n]))
+            plot_cmd_list.Add(rf.LineColor(n + 2))
+            plot_cmd_list.Add(rf.FillColor(n + 2))
+            pdf[n].plotOn(lframe, plot_cmd_list)
+            if num_bosons > 1:
+                if n == 0:
+                    # Add legend
+                    legend = ROOT.TLegend(0.70, 0.75, 0.9, 0.9)
+                legend_entry = legend.AddEntry(list_higgs_boson[n], list_higgs_boson[n]
+                                               + " (m = " + str(round(list_values_mass[n][i], 1))
+                                               + "; w = " + str(round(list_values_width[n][i], 4)) + ")", "l")
+                legend_entry.SetLineColor(n + 2)
 
-        # remove y axis title, set y axis maximum to 1
-        frame.SetYTitle("")
-        frame.SetMaximum(1)
+        # remove y axis title
+        lframe.SetYTitle("%")
+
+        # set y axis maximum to 1
+        lframe.SetMaximum(100)
 
         # draw frame
-        frame.Draw()
+        lframe.Draw()
+
+        if num_bosons > 1:
+            # draw legend
+            legend.Draw()
 
         # animation delay in centiseconds (10ms)
         canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
 
+        lframe.Delete()
+
     # infinite loop gif
     canvas.Print(filename + "++100++")
+
+    # run garbage collector
+    print "gc: ", gc.collect()
+
+
+if __name__ == '__main__':
+    animate_higgs_peak([[10, 20, 40], [7, 15, 24], [9, 17, 26]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015],
+                        [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], '10%', filename='test.gif',
+                        duration=1000)
