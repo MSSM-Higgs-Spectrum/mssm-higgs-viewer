@@ -1,7 +1,9 @@
+# coding=utf-8
 import ROOT
 import os
 import math
 import gc
+import time
 
 
 def calc_x_min(x_list):
@@ -12,10 +14,23 @@ def calc_x_max(x_list):
     return int(max(max(l) for l in x_list)) + 5
 
 
+def perf_time_measure(start_time, comment=''):
+    end_time = time.time()
+    print 'Δt =', round(end_time - start_time, 6), comment
+    return end_time
+
+
 def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
                        filename="animation.gif", duration=5000, skipframes=1):
+
+    global perf
+    perf = time.time()
+
     # disable gc
     gc.disable()
+
+    # performance time measurement
+    perf = perf_time_measure(perf)
 
     # remove gif file (if present)
     try:
@@ -30,6 +45,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     animation_delay = math.ceil(duration * skipframes / len(list_values_mass[0]))
 
     rf = ROOT.RooFit
+
+    # performance time measurement
+    perf = perf_time_measure(perf, 'some calcs')
 
     # suppress INFO:NumericIntegration log
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
@@ -54,22 +72,37 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     pdf = []
     sigma = []
 
+    # performance time measurement
+    perf = perf_time_measure(perf, 'before RooRealVar loop')
+
     for n in range(num_bosons):
         width.append(ROOT.RooRealVar("width", "width", 0))
         mean.append(ROOT.RooRealVar("mean", "mean", 0))
         sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
         pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
 
+    norm = []
+
+    # performance time measurement
+    perf = perf_time_measure(perf, 'before main loop')
+
     for i in xrange(0, len(list_values_mass[0]), skipframes):
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop begin')
+
         # run garbage collector
         print "gc: ", gc.collect()
+
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop gc')
 
         # create/clone new empty frame
         lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
 
         lframe.SetTitle(title + " (m_A=" + str(values_ma[i]) + ")")
 
-        norm = []
+        # empty list
+        norm[:] = []
 
         for n in range(num_bosons):
             mean[n].setVal(list_values_mass[n][i])
@@ -98,6 +131,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
                                                + "; w = " + str(round(list_values_width[n][i], 4)) + ")", "l")
                 legend_entry.SetLineColor(n + 2)
 
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop bosons plotted')
+
         # remove y axis title
         lframe.SetYTitle("%")
 
@@ -111,9 +147,16 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             # draw legend
             legend.Draw()
 
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop frame drawed')
+
         # animation delay in centiseconds (10ms)
         canvas.Print(filename + "+" + str(int(math.ceil(animation_delay / 10))))
 
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop canvas printed')
+
+        # delete cloned frame
         lframe.Delete()
 
     # infinite loop gif
