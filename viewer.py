@@ -23,6 +23,8 @@ def main():
                              "for gaussian function inside voigtian function to blur the values")
     parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True,
                         help="disintegrating Higgs boson(s) (H A h)")
+    parser.add_argument("-f", "--fast_mode", action="store_true", default=False, required=False,
+                        help="use fast gif creation mode (larger filesize)")
     args = parser.parse_args()
 
     # split m_A range into minimum and maximum value, cast to int
@@ -34,10 +36,11 @@ def main():
     root_file_name = args.root_file_name
     tan_beta = args.tangent_beta
     output_filename = args.output_filename
-    skip_frames = args.skip_frames
     duration = args.duration
     list_higgs_bosons = args.list_higgs_bosons
     sigma_gaussian = args.sigma_gaussian
+
+    fast_mode = args.fast_mode
 
     if args.sigma_gaussian is not None:
         sigma_gaussian = args.sigma_gaussian
@@ -90,18 +93,12 @@ def main():
     print(list_values_width)
     print(list_values_mass)
 
-    if output_filename is not None and skip_frames is not None:
+    if output_filename is not None:
         animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration, skipframes=skip_frames, filename=output_filename)
-    elif output_filename is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration, filename=output_filename)
-    elif skip_frames is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration, skipframes=skip_frames)
+                           duration=duration, filename=output_filename, fast_mode=fast_mode)
     else:
         animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration)
+                           duration=duration, fast_mode=fast_mode)
 
 
 if __name__ == '__main__':
