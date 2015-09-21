@@ -63,13 +63,10 @@ def main():
     values_ma = []
 
     # loop through the Higgs bosons list
-    for i in range(0, len(list_higgs_bosons)):
-
-        higgs_boson = list_higgs_bosons[i]
-
+    for i in xrange(0, len(list_higgs_bosons)):
         # construct dataset name
-        dataset_mass_name = "m_" + higgs_boson
-        dataset_width_name = "width_" + higgs_boson
+        dataset_mass_name = "m_" + list_higgs_bosons[i]
+        dataset_width_name = "width_" + list_higgs_bosons[i]
 
         # open root file
         f = ROOT.TFile(input_filename)
@@ -81,14 +78,14 @@ def main():
         values_mass = []
         values_width = []
         # loop trough the m_A range
-        for i in range(ma_min, ma_max, 1):
-            j = i - ma_min
-            values_mass.append(t.Interpolate(i, tan_beta))
-            values_width.append(u.Interpolate(i, tan_beta))
-            values_ma.append(i)
+        for j in xrange(ma_min, ma_max, 1):
+            values_mass.append(t.Interpolate(j, tan_beta))
+            values_width.append(u.Interpolate(j, tan_beta))
+            if i == 0:
+                values_ma.append(j)
 
         # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
-        if higgs_boson == 'A':
+        if list_higgs_bosons[i] == 'A':
             values_mass = values_ma
 
         list_values_mass.append(values_mass)
