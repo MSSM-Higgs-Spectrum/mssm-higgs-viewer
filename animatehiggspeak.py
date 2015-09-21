@@ -8,11 +8,11 @@ from images2gif import writeGif
 
 
 def calc_x_min(x_list):
-    return int(min(min(l) for l in x_list)) - 5
+    return int(min(min(l) for l in x_list))
 
 
 def calc_x_max(x_list):
-    return int(max(max(l) for l in x_list)) + 5
+    return int(max(max(l) for l in x_list))
 
 
 def perf_time_measure(start_time, comment=''):
@@ -67,6 +67,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     # x axis range (enlarged by 5 (?))
     x_min = calc_x_min(list_values_mass)
     x_max = calc_x_max(list_values_mass)
+    x_min -= (x_max - x_min) * 0.1
+    x_max += (x_max - x_min) * 0.1
     x = ROOT.RooRealVar("x", "m / GeV", x_min, x_max)
 
     frame = x.frame()
