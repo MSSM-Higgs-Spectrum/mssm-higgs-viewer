@@ -39,6 +39,7 @@ def main():
     ma_min_str, ma_max_str = args.m_A_range.split("-")
     ma_min = int(ma_min_str)
     ma_max = int(ma_max_str)
+    ma_range = (ma_max - ma_min)
 
     # store args
     input_filename = args.input_filename
@@ -62,6 +63,12 @@ def main():
     list_values_width = []
     values_ma = []
 
+    num_frames = int(round(float(duration) / float(frame_time)))
+    ma_delta = (float(ma_range) / float(num_frames))
+
+    for frame in xrange(1, (num_frames + 1)):
+        values_ma.append(ma_min + (ma_delta * frame))
+
     # loop through the Higgs bosons list
     for i in xrange(0, len(list_higgs_bosons)):
         # construct dataset name
@@ -78,11 +85,9 @@ def main():
         values_mass = []
         values_width = []
         # loop trough the m_A range
-        for j in xrange(ma_min, ma_max, 1):
-            values_mass.append(t.Interpolate(j, tan_beta))
-            values_width.append(u.Interpolate(j, tan_beta))
-            if i == 0:
-                values_ma.append(j)
+        for j in xrange(num_frames):
+            values_mass.append(t.Interpolate(values_ma[j], tan_beta))
+            values_width.append(u.Interpolate(values_ma[j], tan_beta))
 
         # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
         if list_higgs_bosons[i] == 'A':
