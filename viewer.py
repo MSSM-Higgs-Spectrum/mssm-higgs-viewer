@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 
 """
 This is the projects main file, which reads the user input
@@ -13,18 +14,25 @@ from animatehiggspeak import animate_higgs_peak
 def main():
     # create parser, add arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-tb", "--tangent_beta", required=True, help="tangent beta value", type=float)
-    parser.add_argument("-ma", "--m_A_range", required=True, help="m_A range to loop trough (min-max)", type=str)
-    parser.add_argument("-rfn", "--root_file_name", required=True, help="name of root file to use", type=str)
-    parser.add_argument("-d", "--duration", required=True, help="animated GIF duration in milliseconds", type=int)
-    parser.add_argument("-o", "--output_filename", required=False, help="GIF output filename", type=str)
-    parser.add_argument("-s", "--skip_frames", required=False, help="only render every nth frame (default=1)", type=int)
-    parser.add_argument("-sgm", "--sigma_gaussian", help="sigma value (as fixed value or in percent to mass) "
-                             "for gaussian function inside voigtian function to blur the values")
-    parser.add_argument("-Hb", "--list_higgs_bosons", nargs='+', required=True,
-                        help="disintegrating Higgs boson(s) (H A h)")
-    parser.add_argument("-f", "--fast_mode", action="store_true", default=False, required=False,
+    parser.add_argument("-i", "--input_filename",  required=True, type=str, help="ROOT input filename")
+    parser.add_argument("-o", "--output_filename", required=True, type=str, help="GIF output filename")
+
+    parser.add_argument("-b", "--higgs_bosons",   required=True, help="disintegrating Higgs boson(s) (H A h)",
+                        nargs='+', dest="list_higgs_bosons")
+    parser.add_argument("-t", "--tangent_beta",   required=True,  type=float, help="tangent beta value")
+    parser.add_argument("-m", "--m_A_range",      required=True,  type=str, help="m_A range to loop trough (min-max)")
+    parser.add_argument("-s", "--sigma_gaussian", required=False, type=str,
+                        help="sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian"
+                             " function to blur the values")
+
+    parser.add_argument("-d", "--duration", required=True,  type=int, help="GIF animation duration in milliseconds")
+    parser.add_argument("--frame_time",     required=False, type=int, default=30,
+                        help="Time (in milliseconds) per GIF animation frame (default=30)")
+    parser.add_argument("--fast_mode",      required=False, action="store_true", default=False,
                         help="use fast gif creation mode (larger filesize)")
+
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="increase output verbosity")
+
     args = parser.parse_args()
 
     # split m_A range into minimum and maximum value, cast to int
@@ -33,17 +41,15 @@ def main():
     ma_max = int(ma_max_str)
 
     # store args
-    root_file_name = args.root_file_name
+    input_filename = args.input_filename
     tan_beta = args.tangent_beta
     output_filename = args.output_filename
     duration = args.duration
     list_higgs_bosons = args.list_higgs_bosons
-    sigma_gaussian = args.sigma_gaussian
+    frame_time = args.frame_time
+    debug = args.verbose
 
     fast_mode = args.fast_mode
-
-    if args.sigma_gaussian is not None:
-        sigma_gaussian = args.sigma_gaussian
 
      # check, if min and max values are in diagram range
     if ma_min < 90 or ma_max > 2000:
@@ -66,7 +72,7 @@ def main():
         dataset_width_name = "width_" + higgs_boson
 
         # open root file
-        f = ROOT.TFile(root_file_name)
+        f = ROOT.TFile(input_filename)
 
         # create mass and width list
         t = f.Get(dataset_mass_name)
@@ -88,17 +94,14 @@ def main():
         list_values_mass.append(values_mass)
         list_values_width.append(values_width)
 
-    # for debugging
-    print(list_higgs_bosons)
-    print(list_values_width)
-    print(list_values_mass)
+    if debug > 1:
+        print "list_higgs_bosons =", list_higgs_bosons
+        print "list_values_width =", list_values_width
+        print "list_values_mass = ", list_values_mass
 
-    if output_filename is not None:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration, filename=output_filename, fast_mode=fast_mode)
-    else:
-        animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, sigma_gaussian,
-                           duration=duration, fast_mode=fast_mode)
+    animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, args.sigma_gaussian,
+                       duration=duration, filename=output_filename, fast_mode=fast_mode, frame_time=frame_time,
+                       debug=debug)
 
 
 if __name__ == '__main__':

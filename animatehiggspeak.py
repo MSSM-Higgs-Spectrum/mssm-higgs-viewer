@@ -22,15 +22,17 @@ def perf_time_measure(start_time, comment=''):
 
 
 def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
-                       filename="animation.gif", duration=5000, skipframes=0, frame_time=20, fast_mode=False):
-    global perf
-    perf = time.time()
+                       filename="animation.gif", duration=5000, skipframes=0, frame_time=20, fast_mode=False, debug=0):
+    if debug > 2:
+        global perf
+        perf = time.time()
 
     # disable gc
     gc.disable()
 
-    # performance time measurement
-    perf = perf_time_measure(perf)
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf)
 
     # remove gif file (if present)
     try:
@@ -55,8 +57,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
 
     rf = ROOT.RooFit
 
-    # performance time measurement
-    perf = perf_time_measure(perf, 'some calcs')
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf, 'some calcs')
 
     # suppress INFO:NumericIntegration log
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
@@ -81,8 +84,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     pdf = []
     sigma = []
 
-    # performance time measurement
-    perf = perf_time_measure(perf, 'before RooRealVar loop')
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf, 'before RooRealVar loop')
 
     for n in range(num_bosons):
         width.append(ROOT.RooRealVar("width", "width", 0))
@@ -93,21 +97,24 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     norm = []
     frame_filenames = []
 
-    # performance time measurement
-    perf = perf_time_measure(perf, 'before main loop')
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf, 'before main loop')
 
-    print 'Rendering', round(len(list_values_mass[0]) / skip_frames), 'frames ...'
-    print 'Animation time:', round(len(list_values_mass[0]) / skip_frames) * 40, 'ms'
+    if debug > 1:
+        print 'Rendering', round(len(list_values_mass[0]) / skip_frames), 'frames ...'
+        print 'Animation time:', round(len(list_values_mass[0]) / skip_frames) * 40, 'ms'
 
     for i in xrange(0, len(list_values_mass[0]), skip_frames):
-        # performance time measurement
-        perf = perf_time_measure(perf, 'loop begin')
+        if debug > 2:
+            # performance time measurement
+            perf = perf_time_measure(perf, 'loop begin')
 
-        # run garbage collector
-        print "gc: ", gc.collect()
-
-        # performance time measurement
-        perf = perf_time_measure(perf, 'loop gc')
+        if debug > 3:
+            # run garbage collector
+            print "gc: ", gc.collect()
+            # performance time measurement
+            perf = perf_time_measure(perf, 'loop gc')
 
         # create/clone new empty frame
         lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
@@ -145,8 +152,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
                 legend_entry.SetLineColor(n + 2)
                 legend_entry.SetLineWidth(10)
 
-        # performance time measurement
-        perf = perf_time_measure(perf, 'loop bosons plotted')
+        if debug > 2:
+            # performance time measurement
+            perf = perf_time_measure(perf, 'loop bosons plotted')
 
         # remove y axis title
         lframe.SetYTitle("%")
@@ -161,8 +169,9 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             # draw legend
             legend.Draw()
 
-        # performance time measurement
-        perf = perf_time_measure(perf, 'loop frame drawed')
+        if debug > 2:
+            # performance time measurement
+            perf = perf_time_measure(perf, 'loop frame drawed')
 
         if not fast_mode:
             # animation delay in centiseconds (10ms)
@@ -173,14 +182,16 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             canvas.Print(frame_filename)
             frame_filenames.append(frame_filename)
 
-        # performance time measurement
-        perf = perf_time_measure(perf, 'loop canvas printed')
+        if debug > 2:
+            # performance time measurement
+            perf = perf_time_measure(perf, 'loop canvas printed')
 
         # delete cloned frame
         lframe.Delete()
 
-    # performance time measurement
-    perf = perf_time_measure(perf, 'loop done')
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf, 'loop done')
 
     if not fast_mode:
         # infinite loop gif
@@ -190,20 +201,23 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         # open frame images
         images = [Image.open(img) for img in frame_filenames]
 
-        # performance time measurement
-        perf = perf_time_measure(perf, 'imgs loaded')
+        if debug > 2:
+            # performance time measurement
+            perf = perf_time_measure(perf, 'imgs loaded')
 
         # write gif
         writeGif(filename, images, duration=(frame_time/1000.0))
 
-    # performance time measurement
-    perf = perf_time_measure(perf, 'GIF file created')
+    if debug > 2:
+        # performance time measurement
+        perf = perf_time_measure(perf, 'GIF file created')
 
-    # run garbage collector
-    print "gc: ", gc.collect()
+    if debug > 3:
+        # run garbage collector
+        print "gc: ", gc.collect()
 
 
 if __name__ == '__main__':
     animate_higgs_peak([[10, 20, 40], [7, 15, 24], [9, 17, 26]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015],
                         [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], '10%', filename='test.gif',
-                        duration=1000)
+                        duration=1000, debug=3)
