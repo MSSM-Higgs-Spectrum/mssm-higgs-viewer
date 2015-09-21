@@ -7,14 +7,6 @@ from PIL import Image
 from images2gif import writeGif
 
 
-def calc_x_min(x_list):
-    return int(min(min(l) for l in x_list))
-
-
-def calc_x_max(x_list):
-    return int(max(max(l) for l in x_list))
-
-
 def perf_time_measure(start_time, comment=''):
     end_time = time.time()
     print 'Δt =', round(end_time - start_time, 6), comment
@@ -64,12 +56,7 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     # suppress INFO:NumericIntegration log
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
 
-    # x axis range (enlarged by 5 (?))
-    x_min = calc_x_min(list_values_mass)
-    x_max = calc_x_max(list_values_mass)
-    x_min -= (x_max - x_min) * 0.1
-    x_max += (x_max - x_min) * 0.1
-    x = ROOT.RooRealVar("x", "m / GeV", x_min, x_max)
+    x = ROOT.RooRealVar("x", "m / GeV", min(values_ma), max(values_ma))
 
     frame = x.frame()
 
@@ -85,18 +72,23 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     mean = []
     pdf = []
     sigma = []
+    hist = []
 
     if debug > 2:
         # performance time measurement
         perf = perf_time_measure(perf, 'before RooRealVar loop')
+
+    # do not modify ROOT file
+    ROOT.TH1.AddDirectoryStatus()
+    ROOT.TH1.AddDirectory(False)
 
     for n in range(num_bosons):
         width.append(ROOT.RooRealVar("width", "width", 0))
         mean.append(ROOT.RooRealVar("mean", "mean", 0))
         sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
         pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
-
-    norm = []
+        hist.append(ROOT.TH1F(list_higgs_boson[n], "", int(round(len(values_ma) / skip_frames)) + 2,
+                              float(min(values_ma)), float(max(values_ma))))
     frame_filenames = []
 
     if debug > 2:
@@ -106,6 +98,10 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     if debug > 1:
         print 'Rendering', round(len(list_values_mass[0]) / skip_frames), 'frames ...'
         print 'Animation time:', round(len(list_values_mass[0]) / skip_frames) * 40, 'ms'
+
+    if skip_frames != 1:
+        print "Error: skip_frame != 1"
+        return
 
     for i in xrange(0, len(list_values_mass[0]), skip_frames):
         if debug > 2:
@@ -120,14 +116,6 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         else:
             gc.collect()
 
-        # create/clone new empty frame
-        lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
-
-        lframe.SetTitle(title + " (m_A=" + str(values_ma[i]) + ")")
-
-        # empty list
-        norm[:] = []
-
         for n in range(num_bosons):
             mean[n].setVal(list_values_mass[n][i])
             width[n].setVal(list_values_width[n][i])
@@ -140,45 +128,21 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             else:
                 # sigma is fixed and absolute
                 sigma[n].setVal(float(sigma_gaussian))
-            # plot normalized gauss function on frame
-            # norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal())
-            norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x)).getVal())
-            # norm[n] = 100
-            plot_cmd_list = ROOT.RooLinkedList(3)
-            plot_cmd_list.Add(rf.Normalization(norm[n]))
-            plot_cmd_list.Add(rf.LineColor(n + 2))
-            plot_cmd_list.Add(rf.FillColor(n + 2))
-            pdf[n].plotOn(lframe, plot_cmd_list)
-            if num_bosons > 1:
-                if n == 0:
-                    # Add legend
-                    legend = ROOT.TLegend(0.70, 0.75, 0.9, 0.9)
-                legend_entry = legend.AddEntry(list_higgs_boson[n], list_higgs_boson[n]
-                                               + " (m = " + str(round(list_values_mass[n][i], 1))
-                                               + "; w = " + str(round(list_values_width[n][i], 4)) + ")", "l")
-                legend_entry.SetLineColor(n + 2)
-                legend_entry.SetLineWidth(10)
+
+            # TH1F Histogram
+            bin_nr = 1
+            for ma_value in values_ma:
+                x.setVal(float(ma_value))
+                val = pdf[n].getVal(ROOT.RooArgSet(x))
+                hist[n].SetBinContent(bin_nr, val)
+                bin_nr += 1
+
+            hist[n].SetMaximum(0.5)
+            hist[n].Draw("HIST SAME C")
 
         if debug > 2:
             # performance time measurement
             perf = perf_time_measure(perf, 'loop bosons plotted')
-
-        # remove y axis title
-        lframe.SetYTitle("%")
-
-        # set y axis maximum to 1
-        lframe.SetMaximum(100)
-
-        # draw frame
-        lframe.Draw()
-
-        if num_bosons > 1:
-            # draw legend
-            legend.Draw()
-
-        if debug > 2:
-            # performance time measurement
-            perf = perf_time_measure(perf, 'loop frame drawed')
 
         if not fast_mode:
             # animation delay in centiseconds (10ms)
@@ -192,9 +156,6 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
         if debug > 2:
             # performance time measurement
             perf = perf_time_measure(perf, 'loop canvas printed')
-
-        # delete cloned frame
-        lframe.Delete()
 
     if debug > 2:
         # performance time measurement
