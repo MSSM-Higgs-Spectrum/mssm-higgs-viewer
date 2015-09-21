@@ -117,6 +117,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             print "gc: ", gc.collect()
             # performance time measurement
             perf = perf_time_measure(perf, 'loop gc')
+        else:
+            gc.collect()
 
         # create/clone new empty frame
         lframe = frame.emptyClone(frame.GetName() + "_" + str(i))
@@ -135,6 +137,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
                 # sigma can be specified in percent of mean value
                 sigma[n].setVal(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
+            else:
+                pass  # TODO
             # plot normalized gauss function on frame
             # norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal())
             norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x)).getVal())
@@ -217,6 +221,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     if debug > 3:
         # run garbage collector
         print "gc: ", gc.collect()
+    else:
+        gc.collect()
 
 
 if __name__ == '__main__':
