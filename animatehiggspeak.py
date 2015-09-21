@@ -138,7 +138,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
                 # sigma can be specified in percent of mean value
                 sigma[n].setVal(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
             else:
-                pass  # TODO
+                # sigma is fixed and absolute
+                sigma[n].setVal(float(sigma_gaussian))
             # plot normalized gauss function on frame
             # norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x), rf.NormSet(ROOT.RooArgSet(x))).getVal())
             norm.append(100.0 / pdf[n].createIntegral(ROOT.RooArgSet(x)).getVal())
