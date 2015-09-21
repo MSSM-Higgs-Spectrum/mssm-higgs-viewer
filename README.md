@@ -2,9 +2,9 @@
 
 ## General
 
-The *mssm-higgs-viewer* uses simulated data in root format to create an animated gif file from it.
+The *mssm-higgs-viewer* uses calculated data stored in root format to create an animated gif file from it.
 
-The used data was created with simulations using benchmark scenarios to predict the measurements of three neutral Higgs bosons according to the MSSM (Minimal Supersymmetric Standard Model) at the CMS detector.
+The used data was created with theory calculations using benchmark scenarios to predict the measurements of three neutral Higgs bosons according to the MSSM (Minimal Supersymmetric Standard Model).
 
 In the plot you can show the neutral Higgs bosons peaks in relation to a fixed tangent beta value and an over time changing m_A value.
 
@@ -26,11 +26,11 @@ The viewer.py is executable and can be started from command line like a shell sc
 
 | short | long | content |
 |------|-------|---------|
-| -tb | --tangent_beta | Tangent beta value (a mssm - parameter)|
-| -ma | --m_A_range |m_A range to loop trough (minimum - maximum)|
-| -rfn| --root_file_name | path and name of root file to use|
+| -i  | --input_filename | GIF output filename |
+| -t  | --tangent_beta | Tangent beta value (a mssm - parameter)|
+| -m  | --m_A_range |m_A range to loop trough (minimum - maximum)|
 | -d  | --duration | animated GIF duration in milliseconds |
-| -Hb | --list_higgs_bosons | list of Higgs boson(s) to show (H A h) |
+| -b  | --higgs_bosons  | list of Higgs boson(s) to show (H A h) |
 
 
 #### Optional arguments:  
@@ -38,10 +38,12 @@ The viewer.py is executable and can be started from command line like a shell sc
 | short | long | content |
 |------|-------|---------|
 | -o  | --output_filename | GIF output filename |
-| -s  | --skip_frames | only render every nth frame (default=1)
-| -sgm| --sigma_gaussian | sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian function to blur the peaks|
-|  -h | --help | show this help message and exit
-
+| -d  | --duration | animated GIF duration in milliseconds
+| -s  | --sigma_gaussian | sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian function to blur the peaks|
+| -h  | --help | show this help message and exit
+|     | --frame_time | Time (in milliseconds) per GIF animation frame (default=30) |
+|     | --fast_mode | use fast gif creation mode (larger filesize) |
+| -v  | --verbose | increase output verbosity |
 
 ## Tests
 
