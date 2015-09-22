@@ -5,6 +5,32 @@ import gc
 import time
 from PIL import Image
 from images2gif import writeGif
+import math
+
+
+def calc_max_voigt_height(width, sigma, xs, int_lumi=1e-15):
+    """
+    method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
+    estimation, see https://en.wikipedia.org/wiki/Voigt_profile
+    :param width: list of voigt width values (gamma)
+    :param sigma: list of voigt sigma values
+    :param xs: list of cross section values
+    :param int_lumi: luminosity
+    :return: estimated maximum voigt profile height
+    """
+    height_list = []
+    for i in xrange(len(width)):
+        # # voigtian height ~= 15 * A / voigt_fwhm
+        # more precise calculation:
+        # f_g = 2 * sigma[i] * math.sqrt(2 * math.log(2))
+        f_g = sigma[i] * 2.35482
+        f_l = 2 * width[i]
+        # f_v = (0.5346 * f_l) + sqrt((0.2166 * sqr(f_l)) + sqr(2 * sigma * f_g))
+        f_v = (0.5346 * f_l) + math.sqrt((0.2166 * math.pow(f_l, 2)) + math.pow(f_g, 2))
+        height = 15 * (xs[i] * int_lumi) / f_v
+        # if height is greater than all past heights save
+        height_list.append(height)
+    return max(height_list)
 
 
 def perf_time_measure(start_time, comment=''):
@@ -37,8 +63,28 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
 
     num_bosons = len(list_values_mass)
 
-    # calculate delay time per frame
-    # one interval/frame per dataset
+    # calculate plot y axis range (max height)
+    y_height = 0
+    for n in xrange(num_bosons):
+        # calc sigma:
+        sigma = []
+        if sigma_gaussian is None:
+            # default sigma is 20% of mean value
+            for i in xrange(len(list_values_mass[n])):
+                sigma.append(list_values_mass[n][i] * 0.2)
+        elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
+            # sigma can be specified in percent of mean value
+            for i in xrange(len(list_values_mass[n])):
+                sigma.append(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
+        else:
+            # sigma is fixed and absolute
+            for i in xrange(len(list_values_mass[n])):
+                sigma.append(float(sigma_gaussian))
+        height = calc_max_voigt_height(list_values_width[n], sigma, list_values_xs[n])
+        print "height", height
+        if height > y_height:
+            y_height = height
+    print "y_height", y_height
 
     ## animation_delay = math.ceil(duration * skip_frames / len(list_values_mass[0]))
     # animation_delay = 4 -> 40ms per frame -> 25fps (frame_time = 40)
@@ -141,12 +187,13 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             print "scale_factor", scale_factor
             hist[n].Scale(scale_factor)
-            hist[n].SetMaximum(2 * (10 ** -12))
+            # set previous estimated height
+            hist[n].SetMaximum(y_height)
             ROOT.gStyle.SetHistFillColor(n + 2)
-            ROOT.gStyle.SetHistFillStyle(1)
+            ROOT.gStyle.SetHistFillStyle(3003)  # https://root.cern.ch/doc/master/classTAttFill.html#F2
             ROOT.gStyle.SetHistLineColor(n + 2)
             ROOT.gStyle.SetHistLineStyle(0)
-            ROOT.gStyle.SetHistLineWidth(5)
+            ROOT.gStyle.SetHistLineWidth(2)
             hist[n].UseCurrentStyle()
             hist[n].GetXaxis().SetRange(1, hist[n].GetNbinsX() - 1)
             hist[n].Draw("HIST SAME C")
