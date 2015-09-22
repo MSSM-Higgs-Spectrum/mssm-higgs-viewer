@@ -30,6 +30,9 @@ def main():
                         help="Time (in milliseconds) per GIF animation frame (default=30)")
     parser.add_argument("--fast_mode",      required=False, action="store_true", default=False,
                         help="use fast gif creation mode (larger filesize)")
+    parser.add_argument("--keep_pictures",      required=False, action="store_true", default=False,
+                        help="do not delete frame images (saved in '<filename>/<filename>_N.png') "
+                             "(useful for LaTeX/beamer)")
 
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase output verbosity")
     parser.add_argument("-p", "--production_mode", required=False, type=str, default="gg",
@@ -54,6 +57,10 @@ def main():
     prod_mode = args.production_mode
 
     fast_mode = args.fast_mode
+
+    if args.keep_pictures and not fast_mode:
+        fast_mode = True
+        print "--fast_mode enabled (required for --keep_pictures)"
 
      # check, if min and max values are in diagram range
     if ma_min < 90 or ma_max > 2000:
@@ -113,8 +120,8 @@ def main():
         print "list_values_xs = ", list_values_xs
 
     animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_bosons, args.sigma_gaussian,
-                       duration=duration, filename=output_filename, fast_mode=fast_mode, frame_time=frame_time,
-                       debug=debug)
+                       duration=duration, filename=output_filename, fast_mode=fast_mode, keep_frames=args.keep_pictures,
+                       frame_time=frame_time, debug=debug)
 
 
 if __name__ == '__main__':

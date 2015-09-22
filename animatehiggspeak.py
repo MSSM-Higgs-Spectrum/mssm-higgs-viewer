@@ -47,8 +47,9 @@ def get_ma_val(ma_list, bin, nr_bins):
     return ma_min + (bin * ma_delta)
 
 
-def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson, sigma_gaussian=None,
-                       filename="animation.gif", duration=5000, frame_time=20, fast_mode=False, debug=0):
+def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson,
+                       sigma_gaussian=None, filename="animation.gif", duration=5000, frame_time=20, fast_mode=False,
+                       keep_frames=True, debug=0):
     if debug > 2:
         global perf
         perf = time.time()
@@ -66,8 +67,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
     except OSError:
         pass
 
-    if not os.path.exists('tmp'):
-        os.makedirs('tmp')
+    if not os.path.exists(filename[:-4] + '/'):
+        os.makedirs(filename[:-4] + '/')
 
     num_bosons = len(list_values_mass)
 
@@ -215,7 +216,7 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
             canvas.Print(filename + "+" + str(int(round(frame_time / 10))))
 
         if fast_mode:
-            frame_filename = 'tmp/' + filename + "_" + str(i) + '.png'
+            frame_filename = filename[:-4] + '/' + filename[:-4] + "_" + str(i) + '.png'
             canvas.Print(frame_filename)
             frame_filenames.append(frame_filename)
 
@@ -241,6 +242,19 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
 
         # write gif
         writeGif(filename, images, duration=(frame_time/1000.0))
+
+        if not keep_frames:
+            for frame_filename in frame_filenames:
+                try:
+                    os.remove(frame_filename)
+                except OSError:
+                    print "error removing ", frame_filename
+                    pass
+            try:
+                os.rmdir(filename[:-4])
+            except OSError:
+                print "error removing ", filename[:-4] + '/'
+                pass
 
     if debug > 2:
         # performance time measurement
