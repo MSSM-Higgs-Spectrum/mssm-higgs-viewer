@@ -56,7 +56,11 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
     # suppress INFO:NumericIntegration log
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
 
-    x = ROOT.RooRealVar("x", "m / GeV", min(values_ma), max(values_ma))
+    ma_min = min(values_ma)
+    ma_max = max(values_ma)
+    ma_range = ma_max - ma_min
+    x = ROOT.RooRealVar("x", "m / GeV", ma_min - ma_range, ma_max + ma_range)
+    x.setRange("integrate", ma_min - ma_range, ma_max + ma_range)
 
     frame = x.frame()
 
@@ -127,14 +131,12 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
                 sigma[n].setVal(float(sigma_gaussian))
 
             # fill and draw TH1F Histogram
-            bin_nr = 1
-            for ma_value in values_ma:
-                x.setVal(float(ma_value))
+            for k in xrange(hist[n].GetNbinsX() - 2):
+                x.setVal(float(values_ma[k]))
                 val = pdf[n].getVal(ROOT.RooArgSet(x))
-                hist[n].SetBinContent(bin_nr, val)
-                bin_nr += 1
+                hist[n].SetBinContent(k + 1, val)
             N = 1.0
-            scale_factor = N / hist[n].Integral(0, num_bins + 1)
+            scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             print "scale_factor", scale_factor
             hist[n].Scale(scale_factor)
             hist[n].SetMaximum(0.5)
@@ -144,6 +146,7 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
             ROOT.gStyle.SetHistLineStyle(0)
             ROOT.gStyle.SetHistLineWidth(5)
             hist[n].UseCurrentStyle()
+            hist[n].GetXaxis().SetRange(1, hist[n].GetNbinsX() - 1)
             hist[n].Draw("HIST SAME C")
 
         if debug > 2:
