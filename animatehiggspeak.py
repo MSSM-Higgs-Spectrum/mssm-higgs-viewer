@@ -8,28 +8,49 @@ from images2gif import writeGif
 import math
 
 
-def calc_max_voigt_height(width, sigma, xs, int_lumi=1e-15):
+def calc_max_voigt_height(width, sigma_gaussian, mass, xs, num_bosons, int_lumi=1e-15):
     """
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
-    :param width: list of voigt width values (gamma)
-    :param sigma: list of voigt sigma values
-    :param xs: list of cross section values
+    :param width: list of voigt width values lists (gamma)
+    :param sigma_gaussian: sigma value (string)
+    :param mass list of mass value lists
+    :param xs: list of cross section values lists
+    :param num_bosons number of higgs bosons
     :param int_lumi: luminosity
     :return: estimated maximum voigt profile height
     """
+    # calc sigma
+    sigma = []
+    for n in xrange(num_bosons):
+        if sigma_gaussian is None:
+            # default sigma is 20% of mean value
+            for i in xrange(len(mass[n])):
+                sigma.append(mass[n][i] * 0.2)
+        elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
+            # sigma can be specified in percent of mean value
+            for i in xrange(len(mass[n])):
+                sigma.append(mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
+        else:
+            # sigma is fixed and absolute
+            for i in xrange(len(mass[n])):
+                sigma.append(float(sigma_gaussian))
+
     height_list = []
     for i in xrange(len(width)):
-        # # voigtian height ~= 15 * A / voigt_fwhm
-        # more precise calculation:
-        # f_g = 2 * sigma[i] * math.sqrt(2 * math.log(2))
-        f_g = sigma[i] * 2.35482
-        f_l = 2 * width[i]
-        # f_v = (0.5346 * f_l) + sqrt((0.2166 * sqr(f_l)) + sqr(2 * sigma * f_g))
-        f_v = (0.5346 * f_l) + math.sqrt((0.2166 * math.pow(f_l, 2)) + math.pow(f_g, 2))
-        height = 15 * (xs[i] * int_lumi) / f_v
-        # if height is greater than all past heights save
-        height_list.append(height)
+        l_height = []
+        for n in xrange(num_bosons):
+            # # voigtian height ~= 15 * A / voigt_fwhm
+            # more precise calculation:
+            # f_g = 2 * sigma[i] * math.sqrt(2 * math.log(2))
+            f_g = sigma[i] * 2.35482
+            f_l = 2 * width[n][i]
+            # f_v = (0.5346 * f_l) + sqrt((0.2166 * sqr(f_l)) + sqr(2 * sigma * f_g))
+            f_v = (0.5346 * f_l) + math.sqrt((0.2166 * math.pow(f_l, 2)) + math.pow(f_g, 2))
+            height = 15 * (xs[n][i] * int_lumi) / f_v
+            # if height is greater than all past heights save
+            l_height.append(height)
+        height_list.append(max(l_height))
     return max(height_list)
 
 
@@ -73,27 +94,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
     num_bosons = len(list_values_mass)
 
     # calculate plot y axis range (max height)
-    y_height = 0
-    for n in xrange(num_bosons):
-        # calc sigma:
-        sigma = []
-        if sigma_gaussian is None:
-            # default sigma is 20% of mean value
-            for i in xrange(len(list_values_mass[n])):
-                sigma.append(list_values_mass[n][i] * 0.2)
-        elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
-            # sigma can be specified in percent of mean value
-            for i in xrange(len(list_values_mass[n])):
-                sigma.append(list_values_mass[n][i] * float(sigma_gaussian[:-1]) / 100.0)
-        else:
-            # sigma is fixed and absolute
-            for i in xrange(len(list_values_mass[n])):
-                sigma.append(float(sigma_gaussian))
-        height = calc_max_voigt_height(list_values_width[n], sigma, list_values_xs[n])
-        print "height", height
-        if height > y_height:
-            y_height = height
-    print "y_height", y_height
+    y_height = calc_max_voigt_height(list_values_width, sigma_gaussian, list_values_mass, list_values_xs, num_bosons)
+    print "height", y_height
 
     ## animation_delay = math.ceil(duration * skip_frames / len(list_values_mass[0]))
     # animation_delay = 4 -> 40ms per frame -> 25fps (frame_time = 40)
@@ -149,6 +151,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
         pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
         hist.append(ROOT.TH1F(list_higgs_boson[n], "", num_bins_visible,
                               float(min(values_ma)), float(max(values_ma))))
+    hist_sum = ROOT.TH1F("sum", "", num_bins_visible,
+                          float(min(values_ma)), float(max(values_ma)))
     frame_filenames = []
 
     if debug > 2:
@@ -196,15 +200,42 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
             N = list_values_xs[n][i] * 10 * (10 ** -15)
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             hist[n].Scale(scale_factor)
+
+        # set sum of histogram bin values as hist_sum histogram value
+        for l in xrange(hist_sum.GetNbinsX()):
+            val = 0.0
+            for m in xrange(num_bosons):
+                val += hist[m].GetBinContent(l)
+            hist_sum.SetBinContent(l, val)
+
+        # set previous estimated height
+        hist_sum.SetMaximum(y_height)
+        # set histogram style
+        # https://root.cern.ch/doc/master/classTAttFill.html#F2
+        ROOT.gStyle.SetHistFillColor(1)
+        ROOT.gStyle.SetHistFillStyle(3003)
+        ROOT.gStyle.SetHistLineColor(1)
+        ROOT.gStyle.SetHistLineStyle(0)
+        ROOT.gStyle.SetHistLineWidth(2)
+        hist_sum.UseCurrentStyle()
+        # set x axis range
+        hist_sum.GetXaxis().SetRange(1, num_bins_visible)
+        # draw histogram
+        hist_sum.Draw("HIST SAME")
+
+        for n in range(num_bosons):
             # set previous estimated height
             hist[n].SetMaximum(y_height)
+            # set histogram style
             ROOT.gStyle.SetHistFillColor(n + 2)
-            ROOT.gStyle.SetHistFillStyle(3003)  # https://root.cern.ch/doc/master/classTAttFill.html#F2
+            ROOT.gStyle.SetHistFillStyle(3003)
             ROOT.gStyle.SetHistLineColor(n + 2)
             ROOT.gStyle.SetHistLineStyle(0)
             ROOT.gStyle.SetHistLineWidth(2)
             hist[n].UseCurrentStyle()
+            # set x axis range
             hist[n].GetXaxis().SetRange(1, num_bins_visible)
+            # draw histogram
             hist[n].Draw("HIST SAME")
 
         if debug > 2:
