@@ -39,6 +39,14 @@ def perf_time_measure(start_time, comment=''):
     return end_time
 
 
+def get_ma_val(ma_list, bin, nr_bins):
+    ma_min = min(ma_list)
+    ma_max = max(ma_list)
+    ma_range = ma_max - ma_min
+    ma_delta = float(ma_range) / float(nr_bins)
+    return ma_min + (bin * ma_delta)
+
+
 def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson, sigma_gaussian=None,
                        filename="animation.gif", duration=5000, frame_time=20, fast_mode=False, debug=0):
     if debug > 2:
@@ -132,13 +140,13 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
     ROOT.TH1.AddDirectoryStatus()
     ROOT.TH1.AddDirectory(False)
 
-    num_bins = int(round(len(values_ma) / skip_frames)) + 2
+    num_bins_visible = 1000
     for n in range(num_bosons):
         width.append(ROOT.RooRealVar("width", "width", 0))
         mean.append(ROOT.RooRealVar("mean", "mean", 0))
         sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
         pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[n], width[n], sigma[n]))
-        hist.append(ROOT.TH1F(list_higgs_boson[n], "", num_bins,
+        hist.append(ROOT.TH1F(list_higgs_boson[n], "", num_bins_visible,
                               float(min(values_ma)), float(max(values_ma))))
     frame_filenames = []
 
@@ -177,15 +185,15 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
                 sigma[n].setVal(float(sigma_gaussian))
 
             # fill and draw TH1F Histogram
-            for k in xrange(hist[n].GetNbinsX() - 2):
-                x.setVal(float(values_ma[k]))
+            num_bins_visible = hist[n].GetNbinsX() - 2
+            for k in xrange(num_bins_visible):
+                x.setVal(get_ma_val(values_ma, k, num_bins_visible))
                 val = pdf[n].getVal(ROOT.RooArgSet(x))
                 hist[n].SetBinContent(k + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
             N = list_values_xs[n][i] * 10 * (10 ** -15)
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
-            print "scale_factor", scale_factor
             hist[n].Scale(scale_factor)
             # set previous estimated height
             hist[n].SetMaximum(y_height)
@@ -195,8 +203,8 @@ def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, valu
             ROOT.gStyle.SetHistLineStyle(0)
             ROOT.gStyle.SetHistLineWidth(2)
             hist[n].UseCurrentStyle()
-            hist[n].GetXaxis().SetRange(1, hist[n].GetNbinsX() - 1)
-            hist[n].Draw("HIST SAME C")
+            hist[n].GetXaxis().SetRange(1, num_bins_visible)
+            hist[n].Draw("HIST SAME")
 
         if debug > 2:
             # performance time measurement
