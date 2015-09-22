@@ -13,7 +13,7 @@ def perf_time_measure(start_time, comment=''):
     return end_time
 
 
-def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_boson, sigma_gaussian=None,
+def animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson, sigma_gaussian=None,
                        filename="animation.gif", duration=5000, frame_time=20, fast_mode=False, debug=0):
     if debug > 2:
         global perf
@@ -135,11 +135,13 @@ def animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higg
                 x.setVal(float(values_ma[k]))
                 val = pdf[n].getVal(ROOT.RooArgSet(x))
                 hist[n].SetBinContent(k + 1, val)
-            N = 1.0
+            # calculate normalization factor
+            # get cross section from list, multiply by luminosity
+            N = list_values_xs[n][i] * 10 * (10 ** -15)
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             print "scale_factor", scale_factor
             hist[n].Scale(scale_factor)
-            hist[n].SetMaximum(0.5)
+            hist[n].SetMaximum(2 * (10 ** -12))
             ROOT.gStyle.SetHistFillColor(n + 2)
             ROOT.gStyle.SetHistFillStyle(1)
             ROOT.gStyle.SetHistLineColor(n + 2)

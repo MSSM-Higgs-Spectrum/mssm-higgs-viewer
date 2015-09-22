@@ -32,6 +32,8 @@ def main():
                         help="use fast gif creation mode (larger filesize)")
 
     parser.add_argument("-v", "--verbose", action="count", default=0, help="increase output verbosity")
+    parser.add_argument("-p", "--production_mode", required=False, type=str, default="gg",
+                        help="Higgs boson production mode (default=gg)", choices=['gg', 'bb5F', 'bb4F'])
 
     args = parser.parse_args()
 
@@ -49,6 +51,7 @@ def main():
     list_higgs_bosons = args.list_higgs_bosons
     frame_time = args.frame_time
     debug = args.verbose
+    prod_mode = args.production_mode
 
     fast_mode = args.fast_mode
 
@@ -61,6 +64,7 @@ def main():
 
     list_values_mass = []
     list_values_width = []
+    list_values_xs = []
     values_ma = []
 
     num_frames = int(round(float(duration) / float(frame_time)))
@@ -69,25 +73,30 @@ def main():
     for frame in xrange(1, (num_frames + 1)):
         values_ma.append(ma_min + (ma_delta * frame))
 
+
+    # open root file
+    f = ROOT.TFile(input_filename)
+
     # loop through the Higgs bosons list
     for i in xrange(0, len(list_higgs_bosons)):
         # construct dataset name
         dataset_mass_name = "m_" + list_higgs_bosons[i]
         dataset_width_name = "width_" + list_higgs_bosons[i]
-
-        # open root file
-        f = ROOT.TFile(input_filename)
+        dataset_xs_name = "xs_" + prod_mode + "_" + list_higgs_bosons[i]
 
         # create mass and width list
         t = f.Get(dataset_mass_name)
         u = f.Get(dataset_width_name)
+        v = f.Get(dataset_xs_name)
         # read values from root file into list
         values_mass = []
         values_width = []
+        values_xs = []
         # loop trough the m_A range
         for j in xrange(num_frames):
             values_mass.append(t.Interpolate(values_ma[j], tan_beta))
             values_width.append(u.Interpolate(values_ma[j], tan_beta))
+            values_xs.append(v.Interpolate(values_ma[j], tan_beta))
 
         # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
         if list_higgs_bosons[i] == 'A':
@@ -95,13 +104,15 @@ def main():
 
         list_values_mass.append(values_mass)
         list_values_width.append(values_width)
+        list_values_xs.append(values_xs)
 
     if debug > 1:
         print "list_higgs_bosons =", list_higgs_bosons
         print "list_values_width =", list_values_width
         print "list_values_mass = ", list_values_mass
+        print "list_values_xs = ", list_values_xs
 
-    animate_higgs_peak(list_values_mass, list_values_width, values_ma, list_higgs_bosons, args.sigma_gaussian,
+    animate_higgs_peak(list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_bosons, args.sigma_gaussian,
                        duration=duration, filename=output_filename, fast_mode=fast_mode, frame_time=frame_time,
                        debug=debug)
 
