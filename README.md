@@ -45,9 +45,15 @@ The viewer.py is executable and can be started from command line like a shell sc
 |     | --fast_mode | use fast gif creation mode (larger filesize) |
 | -v  | --verbose | increase output verbosity |
 
+
 ## Tests
 
 The program was tested on Ubuntu and Fedora Linux with Root version 5.34.
+
+
+## Sample
+
+![sample animation](https://ww2.rleh.de/mssm/higgs-viewer.gif)
 
 
 ## Links
