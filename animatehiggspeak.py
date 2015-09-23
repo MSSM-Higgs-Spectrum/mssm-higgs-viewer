@@ -74,11 +74,24 @@ def get_ma_val(ma_list, bin, nr_bins):
     return ma_min + (bin * ma_delta)
 
 
-def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma,
-                       list_values_br, list_higgs_boson, sigma_gaussian=None, filename="animation.gif", duration=5000,
-                       frame_time=20, fast_mode=False, keep_frames=True, debug=0, log_scale=False):
+def animate_higgs_peak(values_ma,
+                       list_values_mass,
+                       list_values_width,
+                       list_values_xs,
+                       list_values_br,
+                       tan_beta,
+                       list_higgs_boson,
+                       sigma_gaussian,
+                       prod_mode,
+                       filename,
+                       fast_mode=False,
+                       keep_frames=True,
+                       frame_time=20,
+                       debug=0,
+                       log_scale=False):
 
     if debug > 2:
+        # initialize performance time measurement
         global perf
         perf = time.time()
 
@@ -299,6 +312,17 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
 
 
 if __name__ == '__main__':
-    animate_higgs_peak([[10, 20, 40], [7, 15, 24], [9, 17, 26]], [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015],
-                        [0.0002, 0.0003, 0.00025]], [60, 70, 80], ['H', 'h', 'A'], '10%', filename='test.gif',
-                        duration=1000, debug=3)
+    # animate_higgs_peak(values_ma, list_values_mass, list_values_width, list_values_xs, list_values_br, tan_beta,
+    #                    list_higgs_bosons, args.sigma_gaussian, prod_mode, output_filename, fast_mode=fast_mode,
+    #                    keep_frames=args.keep_pictures, frame_time=frame_time, debug=debug, log_scale=args.log_scale)
+    animate_higgs_peak([5, 25, 45],
+                       [[10, 20, 40], [7, 15, 24], [9, 17, 26]],
+                       [[0.0002, 0.0001, 0.00008], [0.0001, 0.0002, 0.00015], [0.0002, 0.0003, 0.00025]],
+                       [[0.02, 0.01, 0.008], [0.01, 0.02, 0.015], [0.02, 0.03, 0.005]],
+                       [[0.76, 0.87, 0.56], [0.56, 0.56, 0.58], [0.68, 0.67, 0.65]],
+                       30.0,
+                       ['H', 'h', 'A'],
+                       '10%',
+                       'foobar',
+                       'test.gif',
+                       debug=3)

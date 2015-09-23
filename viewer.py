@@ -136,10 +136,9 @@ def main():
         print "list_values_mass = ", list_values_mass
         print "list_values_xs = ", list_values_xs
 
-    animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma,
-                       list_values_br, list_higgs_bosons, args.sigma_gaussian, duration=duration,
-                       filename=output_filename, fast_mode=fast_mode, keep_frames=args.keep_pictures,
-                       frame_time=frame_time, debug=debug, log_scale=args.log_scale)
+    animate_higgs_peak(values_ma, list_values_mass, list_values_width, list_values_xs, list_values_br, tan_beta,
+                       list_higgs_bosons, args.sigma_gaussian, prod_mode, output_filename, fast_mode=fast_mode,
+                       keep_frames=args.keep_pictures, frame_time=frame_time, debug=debug, log_scale=args.log_scale)
 
 
 if __name__ == '__main__':
