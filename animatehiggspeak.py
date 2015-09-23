@@ -1,7 +1,6 @@
 # coding=utf-8
 import ROOT
 import os
-import gc
 import time
 from PIL import Image
 from images2gif import writeGif
@@ -83,9 +82,6 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
         global perf
         perf = time.time()
 
-    # disable gc
-    gc.disable()
-
     if debug > 2:
         # performance time measurement
         perf = perf_time_measure(perf)
@@ -166,14 +162,6 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
         if debug > 2:
             # performance time measurement
             perf = perf_time_measure(perf, 'loop begin')
-
-        if debug > 3:
-            # run garbage collector
-            print "gc: ", gc.collect()
-            # performance time measurement
-            perf = perf_time_measure(perf, 'loop gc')
-        else:
-            gc.collect()
 
         for boson_index in range(1, num_bosons):
             mean[boson_index].setVal(list_values_mass[boson_index][ma_index])
@@ -308,12 +296,6 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
     if debug > 2:
         # performance time measurement
         perf = perf_time_measure(perf, 'GIF file created')
-
-    if debug > 3:
-        # run garbage collector
-        print "gc: ", gc.collect()
-    else:
-        gc.collect()
 
 
 if __name__ == '__main__':
