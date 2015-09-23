@@ -2,8 +2,8 @@
 import ROOT
 import os
 import time
-from PIL import Image
-from images2gif import writeGif
+import PIL.Image
+import images2gif
 import math
 
 
@@ -271,14 +271,14 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
 
     if fast_mode:
         # open frame images
-        images = [Image.open(img) for img in frame_filenames]
+        images = [PIL.Image.open(img) for img in frame_filenames]
 
         if debug > 2:
             # performance time measurement
             perf = perf_time_measure(perf, 'imgs loaded')
 
         # write gif
-        writeGif(filename, images, duration=(frame_time/1000.0))
+        images2gif.writeGif(filename, images, duration=(frame_time/1000.0))
 
         if not keep_frames:
             for frame_filename in frame_filenames:
