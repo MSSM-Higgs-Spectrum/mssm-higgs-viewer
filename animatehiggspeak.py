@@ -126,7 +126,9 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
     ma_max = max(values_ma)
     ma_range = ma_max - ma_min
     x = ROOT.RooRealVar("x", "m / GeV", ma_min - ma_range, ma_max + ma_range)
-    x.setRange("integrate", ma_min - ma_range, ma_max + ma_range)
+    x.setRange("integrate", ma_min - (100 * ma_range), ma_max + (100 * ma_range))
+
+    # arg_set = ROOT.RooArgSet(x)
 
     frame = x.frame()
 
@@ -213,6 +215,7 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
             if len(list_values_br) != 0:
                 print(str(list_values_br))
                 N = N * list_values_br[n][i]
+            # scale_factor = N / pdf[n].createIntegral(arg_set, rf.NormSet(arg_set), rf.Range("integrate")).getVal()
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             hist[n].Scale(scale_factor)
 
