@@ -231,6 +231,8 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
                 hist_sum.SetMinimum(1e-18)
             else:
                 hist_sum.SetMinimum(log_scale)
+        else:
+            hist_sum.SetMinimum(0)
         # set histogram style
         # https://root.cern.ch/doc/master/classTAttFill.html#F2
         ROOT.gStyle.SetHistFillColor(1)
@@ -264,6 +266,8 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
                     hist[n].SetMinimum(1e-18)
                 else:
                     hist[n].SetMinimum(log_scale)
+            else:
+                hist_sum.SetMinimum(0)
             # set histogram style
             ROOT.gStyle.SetHistFillColor(n + 2)
             ROOT.gStyle.SetHistFillStyle(3003)
