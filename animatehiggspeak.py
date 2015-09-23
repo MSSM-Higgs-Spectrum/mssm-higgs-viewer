@@ -8,7 +8,7 @@ from images2gif import writeGif
 import math
 
 
-def calc_max_voigt_height(width, sigma_gaussian, mass, xs, num_bosons, int_lumi=1e-15):
+def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=1e-15):
     """
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
@@ -16,6 +16,7 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, xs, num_bosons, int_lumi=
     :param width: list of voigt width values lists (gamma)
     :param sigma_gaussian: sigma value (string)
     :param mass: list of mass value lists
+    :param br: list of branching ratio values lists
     :param xs: list of cross section values lists
     :param num_bosons: number of higgs bosons
     :param int_lumi: luminosity
@@ -48,7 +49,12 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, xs, num_bosons, int_lumi=
             f_l = 2 * width[n][i]
             # f_v = (0.5346 * f_l) + sqrt((0.2166 * sqr(f_l)) + sqr(2 * sigma * f_g))
             f_v = (0.5346 * f_l) + math.sqrt((0.2166 * math.pow(f_l, 2)) + math.pow(f_g, 2))
-            height = 15 * (xs[n][i] * int_lumi) / f_v
+            # check, if branching ratio is given
+            if len(br) != 0:
+                br_val = br[n][i]
+            else:
+                br_val = 1
+            height = 15 * br_val * (xs[n][i] * int_lumi) / f_v
             # if height is greater than all past heights save
             l_height.append(height)
         height_list.append(max(l_height))
@@ -69,9 +75,10 @@ def get_ma_val(ma_list, bin, nr_bins):
     return ma_min + (bin * ma_delta)
 
 
-def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson,
-                       sigma_gaussian=None, filename="animation.gif", duration=5000, frame_time=20, fast_mode=False,
-                       keep_frames=True, debug=0, log_scale=False):
+def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma,
+                       list_values_br, list_higgs_boson, sigma_gaussian=None, filename="animation.gif", duration=5000,
+                       frame_time=20, fast_mode=False, keep_frames=True, debug=0, log_scale=False):
+
     if debug > 2:
         global perf
         perf = time.time()
@@ -95,7 +102,8 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
     num_bosons = len(list_values_mass)
 
     # calculate plot y axis range (max height)
-    y_height = calc_max_voigt_height(list_values_width, sigma_gaussian, list_values_mass, list_values_xs, num_bosons)
+    y_height = calc_max_voigt_height(list_values_width, sigma_gaussian, list_values_mass, list_values_br,
+                                     list_values_xs, num_bosons)
     print "height", y_height
 
     ## animation_delay = math.ceil(duration * skip_frames / len(list_values_mass[0]))
@@ -201,6 +209,10 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
             N = list_values_xs[n][i] * 10 * (10 ** -15)
+            # multiply by branching ratio, if decay branch was chosen
+            if len(list_values_br) != 0:
+                print(str(list_values_br))
+                N = N * list_values_br[n][i]
             scale_factor = N / pdf[n].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             hist[n].Scale(scale_factor)
 
