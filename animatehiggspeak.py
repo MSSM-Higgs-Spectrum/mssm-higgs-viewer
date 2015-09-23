@@ -12,6 +12,7 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_l
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
 
+    :rtype : float
     :param width: list of voigt width values lists (gamma)
     :param sigma_gaussian: sigma value (string)
     :param mass: list of mass value lists
@@ -61,17 +62,34 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_l
 
 
 def perf_time_measure(start_time, comment=''):
+    """
+    Measures time elapsed since last call and prints this and the optional comment
+
+    :rtype : float
+    :param start_time: time returned by last perf_time_measure() call
+    :param comment: optional comment to print
+    :return: current time
+    """
     end_time = time.time()
     print 'Δt =', round(end_time - start_time, 6), comment
     return end_time
 
 
-def get_ma_val(ma_list, bin, nr_bins):
+def get_ma_val(ma_list, bin_index, nr_bins):
+    """
+    Interpolate m_A value for finer bin resolution than ma_list resolution
+
+    :rtype : float
+    :param ma_list: list of m_A values (only max() and min() is used)
+    :param bin_index: the bin index to get the interpolated m_A value for
+    :param nr_bins: total number of bins
+    :return:
+    """
     ma_min = min(ma_list)
     ma_max = max(ma_list)
     ma_range = ma_max - ma_min
     ma_delta = float(ma_range) / float(nr_bins)
-    return ma_min + (bin * ma_delta)
+    return ma_min + (bin_index * ma_delta)
 
 
 def animate_higgs_peak(values_ma,
@@ -90,6 +108,26 @@ def animate_higgs_peak(values_ma,
                        debug=0,
                        log_scale=False):
 
+    """
+    animate higgs peaks
+
+    :rtype : None
+    :param values_ma: m_A list (one value per frame)
+    :param list_values_mass: list (one list per boson) of mass value lists (one value per frame)
+    :param list_values_width: list (one list per boson) of width value lists (one value per frame)
+    :param list_values_xs: list (one list per boson) of cross section value lists (one value per frame)
+    :param list_values_br: list (one list per boson) of branching ratio value lists (one value per frame)
+    :param tan_beta: tangent beta value
+    :param list_higgs_boson: list of higgs bosons
+    :param sigma_gaussian: (string) gaussian sigma value, interpreted as relative value to boson mass if last char is %
+    :param prod_mode: production mode (for legend)
+    :param filename: animated GIF output filename
+    :param fast_mode: use fast gif creation mode (larger filesize)
+    :param keep_frames: do not delete temporary created images for every frames
+    :param frame_time: time (in ms) per single frame/images
+    :param debug: debug verbosity (0 means least debug output)
+    :param log_scale: use logarithmic y axis scale
+    """
     if debug > 2:
         # initialize performance time measurement
         global perf
@@ -197,12 +235,12 @@ def animate_higgs_peak(values_ma,
                 hist[boson_index].SetBinContent(k + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
-            N = list_values_xs[boson_index][ma_index] * 10 * (10 ** -15)
+            norm_area = list_values_xs[boson_index][ma_index] * 10 * (10 ** -15)
             # multiply by branching ratio, if decay branch was chosen
             if len(list_values_br) != 0:
                 print(str(list_values_br))
-                N = N * list_values_br[boson_index][ma_index]
-            scale_factor = N / pdf[boson_index].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
+                norm_area = norm_area * list_values_br[boson_index][ma_index]
+            scale_factor = norm_area / pdf[boson_index].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
             hist[boson_index].Scale(scale_factor)
 
         # set sum of histogram bin values as hist_sum histogram value

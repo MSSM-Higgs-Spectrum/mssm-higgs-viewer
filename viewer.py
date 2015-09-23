@@ -56,7 +56,7 @@ def main():
         fast_mode = True
         print "--fast_mode enabled (required for --keep_pictures)"
 
-     # check, if min and max values are in diagram range
+    # check, if min and max values are in diagram range
     if ma_min < 90 or ma_max > 2000:
         raise argparse.ArgumentTypeError("m_A has to be in range of 90 - 2000")
 
@@ -86,7 +86,7 @@ def main():
         root_xs = f.Get("xs_" + args.production_mode + "_" + args.list_higgs_bosons[boson_index])
         # only read branching ratio dataset if decay branch is specified
         if args.decay_branch is not None:
-            w = f.Get("br_" + args.list_higgs_bosons[boson_index] + "_" + args.decay_branch)
+            root_br = f.Get("br_" + args.list_higgs_bosons[boson_index] + "_" + args.decay_branch)
 
         # read values from root file into list
         values_mass = []
@@ -100,7 +100,7 @@ def main():
             values_width.append(root_width.Interpolate(values_ma[frame_index], args.tan_beta))
             values_xs.append(root_xs.Interpolate(values_ma[frame_index], args.tan_beta))
             if args.decay_branch is not None:
-                values_br.append(w.Interpolate(values_ma[frame_index], args.tan_beta))
+                values_br.append(root_br.Interpolate(values_ma[frame_index], args.tan_beta))
 
         # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
         if args.list_higgs_bosons[boson_index] == 'A':
