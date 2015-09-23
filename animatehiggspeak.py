@@ -12,11 +12,12 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, xs, num_bosons, int_lumi=
     """
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
+
     :param width: list of voigt width values lists (gamma)
     :param sigma_gaussian: sigma value (string)
-    :param mass list of mass value lists
+    :param mass: list of mass value lists
     :param xs: list of cross section values lists
-    :param num_bosons number of higgs bosons
+    :param num_bosons: number of higgs bosons
     :param int_lumi: luminosity
     :return: estimated maximum voigt profile height
     """
@@ -70,7 +71,7 @@ def get_ma_val(ma_list, bin, nr_bins):
 
 def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson,
                        sigma_gaussian=None, filename="animation.gif", duration=5000, frame_time=20, fast_mode=False,
-                       keep_frames=True, debug=0):
+                       keep_frames=True, debug=0, log_scale=False):
     if debug > 2:
         global perf
         perf = time.time()
@@ -128,6 +129,8 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
     frame.SetTitle(title)
 
     canvas = ROOT.TCanvas("canvas", "canvas", 1300, 750)
+    if log_scale is not False:
+        canvas.SetLogy(1)
 
     width = []
     mean = []
@@ -210,6 +213,12 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
 
         # set previous estimated height
         hist_sum.SetMaximum(y_height)
+        # set minimum (for logarithmic scale)
+        if log_scale is not False:
+            if log_scale is None:
+                hist_sum.SetMinimum(1e-18)
+            else:
+                hist_sum.SetMinimum(log_scale)
         # set histogram style
         # https://root.cern.ch/doc/master/classTAttFill.html#F2
         ROOT.gStyle.SetHistFillColor(1)
@@ -237,6 +246,12 @@ def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width,
         for n in range(num_bosons):
             # set previous estimated height
             hist[n].SetMaximum(y_height)
+            # set minimum (for logarithmic scale)
+            if log_scale is not False:
+                if log_scale is None:
+                    hist[n].SetMinimum(1e-18)
+                else:
+                    hist[n].SetMinimum(log_scale)
             # set histogram style
             ROOT.gStyle.SetHistFillColor(n + 2)
             ROOT.gStyle.SetHistFillStyle(3003)

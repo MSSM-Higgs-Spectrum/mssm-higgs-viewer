@@ -24,6 +24,9 @@ def main():
     parser.add_argument("-s", "--sigma_gaussian", required=False, type=str,
                         help="sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian"
                              " function to blur the values")
+    parser.add_argument("-l", "--log_scale",      required=False, type=float, action='store', nargs='?', default=False,
+                        help="use logarithmic scale for y axis (optional set y axis minimum; default=1e-18)")
+    # args.log_scale: False if not set, None if set without value, else specified value
 
     parser.add_argument("-d", "--duration", required=True,  type=int, help="GIF animation duration in milliseconds")
     parser.add_argument("--frame_time",     required=False, type=int, default=30,
@@ -121,7 +124,7 @@ def main():
 
     animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_bosons, args.sigma_gaussian,
                        duration=duration, filename=output_filename, fast_mode=fast_mode, keep_frames=args.keep_pictures,
-                       frame_time=frame_time, debug=debug)
+                       frame_time=frame_time, debug=debug, log_scale=args.log_scale)
 
 
 if __name__ == '__main__':
