@@ -119,7 +119,7 @@ def main():
         print "list_values_mass = ", list_values_mass
         print "list_values_xs = ", list_values_xs
 
-    animate_higgs_peak(tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_bosons, args.sigma_gaussian,
+    animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_bosons, args.sigma_gaussian,
                        duration=duration, filename=output_filename, fast_mode=fast_mode, keep_frames=args.keep_pictures,
                        frame_time=frame_time, debug=debug)
 

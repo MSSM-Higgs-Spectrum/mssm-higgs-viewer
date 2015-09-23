@@ -68,7 +68,7 @@ def get_ma_val(ma_list, bin, nr_bins):
     return ma_min + (bin * ma_delta)
 
 
-def animate_higgs_peak(tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson,
+def animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma, list_higgs_boson,
                        sigma_gaussian=None, filename="animation.gif", duration=5000, frame_time=20, fast_mode=False,
                        keep_frames=True, debug=0):
     if debug > 2:
@@ -223,13 +223,13 @@ def animate_higgs_peak(tan_beta, list_values_mass, list_values_width, list_value
         # set histogram title and axis label
         hist_sum.SetTitle("MSSM-Higgs-Viewer")
         hist_sum.GetXaxis().SetTitle("m [GeV]")
-        hist_sum.GetYaxis().SetTitle("")
+        hist_sum.GetYaxis().SetTitle("Events / GeV")
         # draw histogram
         hist_sum.Draw("HIST SAME")
 
         # create legend
         # leg = ROOT.TLegend( 0.15, 0.70, 0.38, 0.85)
-        leg = ROOT.TLegend(0.76, 0.75, 0.99, 0.99)  # over default legend box
+        leg = ROOT.TLegend(0.70, 0.70, 0.99, 0.99)  # over default legend box
         # leg = ROOT.TLegend(0.66, 0.65, 0.89, 0.89)
         leg.SetFillColor(0)
         leg.SetLineColor(1)
@@ -252,7 +252,7 @@ def animate_higgs_peak(tan_beta, list_values_mass, list_values_width, list_value
             leg.AddEntry(hist[n], list_higgs_boson[n] + " - Higgs boson")
 
         leg.AddEntry(hist_sum, "sum of all Higgs bosons")
-        leg.SetHeader("m_{A}" + " = {0:04d}     tan(#beta) = {1:2.0f}".format(int(values_ma[i]), tan_beta))
+        leg.SetHeader("prod. mode = " + prod_mode + "   m_{A}" + " = {0:04d}   tan(#beta) = {1:2.0f}".format(int(values_ma[i]), tan_beta))
 
         leg.Draw()
 
