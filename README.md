@@ -26,24 +26,27 @@ The viewer.py is executable and can be started from command line like a shell sc
 
 | short | long | content |
 |------|-------|---------|
-| -i  | --input_filename | GIF output filename |
-| -t  | --tangent_beta | Tangent beta value (a mssm - parameter)|
-| -m  | --m_A_range |m_A range to loop trough (minimum - maximum)|
-| -d  | --duration | animated GIF duration in milliseconds |
-| -b  | --higgs_bosons  | list of Higgs boson(s) to show (H A h) |
+| -i | --input_filename | ROOT input filename |
+| -o | --output_filename | GIF output filename |
+| -b | --higgs_bosons  | list of Higgs boson(s) to show (H A h) |
+| -t | --tang_beta | Tangent beta value (a mssm - parameter)|
+| -m | --m_A_range |m_A range to loop trough (minimum - maximum)|
 
 
 #### Optional arguments:  
 
 | short | long | content |
 |------|-------|---------|
-| -o  | --output_filename | GIF output filename |
-| -d  | --duration | animated GIF duration in milliseconds
-| -s  | --sigma_gaussian | sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian function to blur the peaks|
-| -h  | --help | show this help message and exit
-|     | --frame_time | Time (in milliseconds) per GIF animation frame (default=30) |
-|     | --fast_mode | use fast gif creation mode (larger filesize) |
-| -v  | --verbose | increase output verbosity |
+| -s | --sigma_gaussian | sigma value (as fixed value or in percent to higgs boson mass) for gaussian function inside voigtian function to blur the peaks|
+| -p | --production_mode | Higgs boson production mode (default=gg) |
+| -y | --decay_branch | decay branch to read branching ratio for from ROOT file (default: ratio is one) |
+| -l | --log_scale | enables logarithmic y axis scale |
+| -d | --duration | animated GIF duration in milliseconds |
+|    | --frame_time | Time (in milliseconds) per GIF animation frame (default=30) |
+|    | --fast_mode | use fast gif creation mode (larger filesize) |
+|    | --keep_pictures | do not delete frame images (saved in '<filename>/<filename>_N.png'; useful for LaTeX/beamer) |
+| -v | --verbose | increase output verbosity |
+| -h | --help | show this help message and exit |
 
 
 ## Tests
