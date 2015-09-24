@@ -22,8 +22,8 @@ def main():
     parser.add_argument("-t", "--tan_beta",       required=True,  type=float, help="tangent beta value")
     parser.add_argument("-m", "--m_A_range",      required=True,  type=str, help="m_A range to loop trough (min-max)")
     parser.add_argument("-s", "--sigma_gaussian", required=False, type=str,
-                        help="sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian"
-                             " function to blur the values")
+                        help="sigma value (as fixed value or in percent to higgs boson mass) for gaussian function"
+                             " inside voigtian function to blur the values")
     parser.add_argument("-p", "--production_mode", required=False, type=str, default="gg",
                         help="Higgs boson production mode (default=gg)", choices=['gg', 'bb5F', 'bb4F'])
     parser.add_argument("-y", "--decay_branch", required=False, type=str, help="select decay branch")
