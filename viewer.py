@@ -19,7 +19,7 @@ def main():
 
     parser.add_argument("-b", "--higgs_bosons",   required=True, help="Higgs boson(s) (H A h) to show",
                         nargs='+', dest="list_higgs_bosons")
-    parser.add_argument("-t", "--tangent_beta",   required=True,  type=float, help="tangent beta value")
+    parser.add_argument("-t", "--tan_beta",       required=True,  type=float, help="tangent beta value")
     parser.add_argument("-m", "--m_A_range",      required=True,  type=str, help="m_A range to loop trough (min-max)")
     parser.add_argument("-s", "--sigma_gaussian", required=False, type=str,
                         help="sigma value (as fixed value or in percent to mass) for gaussian function inside voigtian"
@@ -45,21 +45,10 @@ def main():
     args = parser.parse_args()
 
     # split m_A range into minimum and maximum value, cast to int
-    ma_min_str, ma_max_str = args.m_A_range.split("-")
+    ma_min_str, ma_max_str = args.m_A_range.strip().split("-")
     ma_min = int(ma_min_str)
     ma_max = int(ma_max_str)
     ma_range = (ma_max - ma_min)
-
-    # store args
-    input_filename = args.input_filename
-    tan_beta = args.tangent_beta
-    output_filename = args.output_filename
-    duration = args.duration
-    list_higgs_bosons = args.list_higgs_bosons
-    frame_time = args.frame_time
-    debug = args.verbose
-    prod_mode = args.production_mode
-    decay_branch = args.decay_branch
 
     fast_mode = args.fast_mode
 
@@ -67,11 +56,11 @@ def main():
         fast_mode = True
         print "--fast_mode enabled (required for --keep_pictures)"
 
-     # check, if min and max values are in diagram range
+    # check, if min and max values are in diagram range
     if ma_min < 90 or ma_max > 2000:
         raise argparse.ArgumentTypeError("m_A has to be in range of 90 - 2000")
 
-    if tan_beta < 0.5 or tan_beta > 60:
+    if args.tan_beta < 0.5 or args.tan_beta > 60:
         raise argparse.ArgumentTypeError("tangent_beta has to be in range of 0.5 - 60")
 
     list_values_mass = []
@@ -80,66 +69,70 @@ def main():
     list_values_br = []
     values_ma = []
 
-    num_frames = int(round(float(duration) / float(frame_time)))
+    num_frames = int(round(float(args.duration) / float(args.frame_time)))
     ma_delta = (float(ma_range) / float(num_frames))
 
     for frame in xrange(1, (num_frames + 1)):
         values_ma.append(ma_min + (ma_delta * frame))
 
-
     # open root file
-    f = ROOT.TFile(input_filename)
+    f = ROOT.TFile(args.input_filename)
 
     # loop through the Higgs bosons list
-    for i in xrange(0, len(list_higgs_bosons)):
-        # construct dataset name
-        dataset_mass_name = "m_" + list_higgs_bosons[i]
-        dataset_width_name = "width_" + list_higgs_bosons[i]
-        dataset_xs_name = "xs_" + prod_mode + "_" + list_higgs_bosons[i]
-        if decay_branch is not None:
-            dataset_br_name = "br_" + list_higgs_bosons[i] + "_" + decay_branch
-
-        # create mass and width list
-        t = f.Get(dataset_mass_name)
-        u = f.Get(dataset_width_name)
-        v = f.Get(dataset_xs_name)
-        if decay_branch is not None:
-            w = f.Get(dataset_br_name)
+    for boson_index in xrange(0, len(args.list_higgs_bosons)):
+        # open TH2F histograms from root file for inline created dataset names
+        root_mass = f.Get("m_" + args.list_higgs_bosons[boson_index])
+        root_width = f.Get("width_" + args.list_higgs_bosons[boson_index])
+        root_xs = f.Get("xs_" + args.production_mode + "_" + args.list_higgs_bosons[boson_index])
+        # only read branching ratio dataset if decay branch is specified
+        if args.decay_branch is not None:
+            root_br = f.Get("br_" + args.list_higgs_bosons[boson_index] + "_" + args.decay_branch)
 
         # read values from root file into list
         values_mass = []
         values_width = []
         values_xs = []
-        if decay_branch is not None:
+        if args.decay_branch is not None:
             values_br = []
         # loop trough the m_A range
-        for j in xrange(num_frames):
-            values_mass.append(t.Interpolate(values_ma[j], tan_beta))
-            values_width.append(u.Interpolate(values_ma[j], tan_beta))
-            values_xs.append(v.Interpolate(values_ma[j], tan_beta))
-            if decay_branch is not None:
-                values_br.append(w.Interpolate(values_ma[j], tan_beta))
+        for frame_index in xrange(num_frames):
+            values_mass.append(root_mass.Interpolate(values_ma[frame_index], args.tan_beta))
+            values_width.append(root_width.Interpolate(values_ma[frame_index], args.tan_beta))
+            values_xs.append(root_xs.Interpolate(values_ma[frame_index], args.tan_beta))
+            if args.decay_branch is not None:
+                values_br.append(root_br.Interpolate(values_ma[frame_index], args.tan_beta))
 
         # if Higgs boson A is chosen, overwrite the only zeros containing mass list with values_ma
-        if list_higgs_bosons[i] == 'A':
+        if args.list_higgs_bosons[boson_index] == 'A':
             values_mass = values_ma
 
         list_values_mass.append(values_mass)
         list_values_width.append(values_width)
         list_values_xs.append(values_xs)
-        if decay_branch is not None:
+        if args.decay_branch is not None:
             list_values_br.append(values_br)
 
-    if debug > 1:
-        print "list_higgs_bosons =", list_higgs_bosons
+    if args.verbose > 1:
+        print "list_higgs_bosons =", args.list_higgs_bosons
         print "list_values_width =", list_values_width
         print "list_values_mass = ", list_values_mass
         print "list_values_xs = ", list_values_xs
 
-    animate_higgs_peak(prod_mode, tan_beta, list_values_mass, list_values_width, list_values_xs, values_ma,
-                       list_values_br, list_higgs_bosons, args.sigma_gaussian, duration=duration,
-                       filename=output_filename, fast_mode=fast_mode, keep_frames=args.keep_pictures,
-                       frame_time=frame_time, debug=debug, log_scale=args.log_scale)
+    animate_higgs_peak(values_ma,
+                       list_values_mass,
+                       list_values_width,
+                       list_values_xs,
+                       list_values_br,
+                       args.tan_beta,
+                       args.list_higgs_bosons,
+                       args.sigma_gaussian,
+                       args.production_mode,
+                       args.output_filename,
+                       fast_mode=fast_mode,
+                       keep_frames=args.keep_pictures,
+                       frame_time=args.frame_time,
+                       debug=args.verbose,
+                       log_scale=args.log_scale)
 
 
 if __name__ == '__main__':
