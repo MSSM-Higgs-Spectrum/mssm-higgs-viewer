@@ -47,7 +47,7 @@ The viewer.py is executable and can be started from command line like a shell sc
 | -d | --duration | animated GIF duration in milliseconds |
 |    | --frame_time | Time (in milliseconds) per GIF animation frame (default=30) |
 |    | --fast_mode | use fast gif creation mode (larger filesize) |
-|    | --keep_pictures | do not delete frame images (saved in '<filename>/<filename>_N.png'; useful for LaTeX/beamer) |
+|    | --keep_pictures | do not delete frame images (saved in ```<filename>/<filename>_N.png```; useful for LaTeX/beamer) |
 | -v | --verbose | increase output verbosity |
 | -h | --help | show this help message and exit |
 
