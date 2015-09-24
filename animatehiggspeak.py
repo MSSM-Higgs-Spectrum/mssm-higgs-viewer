@@ -201,6 +201,10 @@ def animate_higgs_peak(values_ma,
 
     frame_filenames = []
 
+    # open logo, create logo frame
+    logo = ROOT.TImage.Open("logo.png")
+    logo_frame = ROOT.TPad("logo_pad", "", 0.17, 0.9, 0.3, 1.0)
+
     if debug > 2:
         # performance time measurement
         perf = perf_time_measure(perf, 'before main loop')
@@ -297,6 +301,12 @@ def animate_higgs_peak(values_ma,
         leg.SetHeader("prod. mode = " + prod_mode + "   m_{A}" +
                       " = {0:04d}   tan(#beta) = {1:2.0f}".format(int(values_ma[ma_index]), tan_beta))
         leg.Draw()
+
+        # draw logo frame and logo, change back to canvas
+        logo_frame.Draw()
+        logo_frame.cd()
+        logo.Draw()
+        canvas.cd()
 
         if debug > 2:
             # performance time measurement
