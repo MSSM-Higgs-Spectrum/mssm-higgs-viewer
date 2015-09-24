@@ -1,5 +1,8 @@
 # mssm-higgs-viewer
 
+![MSSM Higgs Viewer Logo](logo.png)
+
+
 ## General
 
 The *mssm-higgs-viewer* uses calculated data stored in root format to create an animated gif file from it.
