@@ -214,7 +214,8 @@ def animate_higgs_peak(values_ma,
             # performance time measurement
             perf = perf_time_measure(perf, 'loop begin')
 
-        for boson_index in range(1, num_bosons):
+        for boson_index in range(num_bosons):
+            hist_index = boson_index + 1
             mean[boson_index].setVal(list_values_mass[boson_index][ma_index])
             width[boson_index].setVal(list_values_width[boson_index][ma_index])
             if sigma_gaussian is None:
@@ -227,12 +228,13 @@ def animate_higgs_peak(values_ma,
                 # sigma is fixed and absolute
                 sigma[boson_index].setVal(float(sigma_gaussian))
 
-            # fill and draw TH1F Histogram
+            # fill TH1F histograms with vales from pdf
             num_bins_visible = hist[boson_index].GetNbinsX() - 2
-            for k in xrange(num_bins_visible):
-                x.setVal(get_ma_val(values_ma, k, num_bins_visible))
+            for bin_index in xrange(num_bins_visible):
+                x.setVal(get_ma_val(values_ma, bin_index, num_bins_visible))
                 val = pdf[boson_index].getVal(ROOT.RooArgSet(x))
-                hist[boson_index].SetBinContent(k + 1, val)
+                # hist_index = boson_index + 1
+                hist[hist_index].SetBinContent(bin_index + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
             norm_area = list_values_xs[boson_index][ma_index] * 10 * (10 ** -15)
@@ -241,11 +243,12 @@ def animate_higgs_peak(values_ma,
                 print(str(list_values_br))
                 norm_area = norm_area * list_values_br[boson_index][ma_index]
             scale_factor = norm_area / pdf[boson_index].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
-            hist[boson_index].Scale(scale_factor)
+            hist[hist_index].Scale(scale_factor)
 
         # set sum of histogram bin values as hist_sum histogram value
         for bin_nr in xrange(hist[0].GetNbinsX()):
             val = 0.0
+            # iterate over all histograms except histogram 0 (sum)
             for hist_index_l in xrange(1, num_hists):
                 val += hist[hist_index_l].GetBinContent(bin_nr)
             hist[0].SetBinContent(bin_nr, val)
