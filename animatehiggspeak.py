@@ -7,7 +7,7 @@ import images2gif
 import math
 
 
-def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=1e-15):
+def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=10):
     """
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
@@ -54,7 +54,7 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_l
                 br_val = br[n][i]
             else:
                 br_val = 1
-            height = 15 * br_val * (xs[n][i] * int_lumi) / f_v
+            height = 3 * br_val * (xs[n][i] * int_lumi * (10 ** 3)) / f_v
             # if height is greater than all past heights save
             l_height.append(height)
         height_list.append(max(l_height))
@@ -106,8 +106,8 @@ def animate_higgs_peak(values_ma,
                        keep_frames=True,
                        frame_time=20,
                        debug=0,
-                       log_scale=False):
-
+                       log_scale=False,
+                       lumi=10):
     """
     animate higgs peaks
 
@@ -154,8 +154,6 @@ def animate_higgs_peak(values_ma,
     if debug > 1:
         print "height", y_height
 
-    rf = ROOT.RooFit
-
     if debug > 2:
         # performance time measurement
         perf = perf_time_measure(perf, 'some calcs')
@@ -165,9 +163,7 @@ def animate_higgs_peak(values_ma,
 
     ma_min = min(values_ma)
     ma_max = max(values_ma)
-    ma_range = ma_max - ma_min
-    x = ROOT.RooRealVar("x", "m / GeV", ma_min - ma_range, ma_max + ma_range)
-    x.setRange("integrate", ma_min - ma_range, ma_max + ma_range)
+    x = ROOT.RooRealVar("x", "m / GeV", ma_min, ma_max)
 
     canvas = ROOT.TCanvas("canvas", "canvas", 1300, 750)
     if log_scale is not False:
@@ -210,6 +206,11 @@ def animate_higgs_peak(values_ma,
         print 'Animation time:', round(len(list_values_mass[0])) * 40, 'ms'
 
     for ma_index in xrange(0, len(values_ma)):
+        if ma_index > 141 and ma_index < 146:
+            debug = 1000
+        else:
+            continue
+
         if debug > 2:
             # performance time measurement
             perf = perf_time_measure(perf, 'loop begin')
@@ -228,8 +229,11 @@ def animate_higgs_peak(values_ma,
                 # sigma is fixed and absolute
                 sigma[boson_index].setVal(float(sigma_gaussian))
 
+            if debug > 4:
+                print "m =", mean[boson_index].getVal(), "w =", width[boson_index].getVal(), "s =", sigma[boson_index].getVal()
+
             # fill TH1F histograms with vales from pdf
-            num_bins_visible = hist[boson_index].GetNbinsX() - 2
+            num_bins_visible = hist[boson_index].GetNbinsX()
             for bin_index in xrange(num_bins_visible):
                 x.setVal(get_ma_val(values_ma, bin_index, num_bins_visible))
                 val = pdf[boson_index].getVal(ROOT.RooArgSet(x))
@@ -237,13 +241,18 @@ def animate_higgs_peak(values_ma,
                 hist[hist_index].SetBinContent(bin_index + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
-            norm_area = list_values_xs[boson_index][ma_index] * 10 * (10 ** -15)
+            norm_area = list_values_xs[boson_index][ma_index] * lumi * (10 ** 3)
             # multiply by branching ratio, if decay branch was chosen
             if len(list_values_br) != 0:
-                print(str(list_values_br))
                 norm_area = norm_area * list_values_br[boson_index][ma_index]
-            scale_factor = norm_area / pdf[boson_index].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
-            hist[hist_index].Scale(scale_factor)
+            # area_under_pdf = 1  # definition of gaussian
+            # scale_factor = norm_area / area_under_pdf
+            if debug > 2:
+                print "Integral before", hist[hist_index].Integral()
+                print "Normalization  scale_factor: {0:9.30f}".format(norm_area)
+            hist[hist_index].Scale(norm_area)
+            if debug > 2:
+                print "Integral", hist[hist_index].Integral()
 
         # set sum of histogram bin values as hist_sum histogram value
         for bin_nr in xrange(hist[0].GetNbinsX()):
@@ -332,7 +341,7 @@ def animate_higgs_peak(values_ma,
             perf = perf_time_measure(perf, 'imgs loaded')
 
         # write gif
-        images2gif.writeGif(filename, images, duration=(frame_time/1000.0))
+        images2gif.writeGif(filename, images, duration=(frame_time / 1000.0))
 
         if not keep_frames:
             for frame_filename in frame_filenames:
