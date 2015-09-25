@@ -1,13 +1,15 @@
 # coding=utf-8
 import ROOT
 import os
+import shutil
 import time
 import PIL.Image
 import images2gif
 import math
+import scipy.special
 
 
-def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=1e-15):
+def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=10):
     """
     method estimates maximum voigt profile height (normalized to xs * int_lumi) for given lists of width and sigma
     estimation, see https://en.wikipedia.org/wiki/Voigt_profile
@@ -54,11 +56,31 @@ def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_l
                 br_val = br[n][i]
             else:
                 br_val = 1
-            height = 15 * br_val * (xs[n][i] * int_lumi) / f_v
+            height = 3 * br_val * (xs[n][i] * int_lumi * (10 ** 3)) / f_v
             # if height is greater than all past heights save
             l_height.append(height)
         height_list.append(max(l_height))
     return max(height_list)
+
+
+def voigt_scipy(x, mean, gamma, sigma):
+    """
+    Voigt profile (see https://en.wikipedia.org/wiki/Voigt_profile)
+
+    calculte voigt using scipy.special.wofz(z).Imag
+    z = (x + i * gamma) / (sigma * sqrt(2)
+
+    :rtype: float
+    :param x: x value
+    :param mean: mean value
+    :param gamma: gamma value (Breit-Wiggner)
+    :param sigma: sigma value (Gaussian)
+    :return: voigt pdf value at x for given mean, gamma, sigma
+    """
+    z = ((x - mean) + (1j * gamma)) / (sigma * math.sqrt(2 * math.pi))
+    faddeeva = scipy.special.wofz(z)
+    result = faddeeva.real / (sigma * math.sqrt(2 * math.pi))
+    return result
 
 
 def perf_time_measure(start_time, comment=''):
@@ -106,7 +128,8 @@ def animate_higgs_peak(values_ma,
                        keep_frames=True,
                        frame_time=20,
                        debug=0,
-                       log_scale=False):
+                       log_scale=False,
+                       lumi=10):
 
     """
     animate higgs peaks
@@ -142,9 +165,17 @@ def animate_higgs_peak(values_ma,
         os.remove(filename)
     except OSError:
         pass
-
-    if not os.path.exists(filename[:-4] + '/'):
-        os.makedirs(filename[:-4] + '/')
+    if fast_mode:
+        try:
+            if not os.path.exists(filename[:-4] + '/'):
+                os.makedirs(filename[:-4] + '/')
+            else:
+                # empty dir
+                shutil.rmtree(filename[:-4] + '/')
+                os.makedirs(filename[:-4] + '/')
+        except OSError:
+            if debug > 0:
+                print "Error removing existing output file/dir"
 
     num_bosons = len(list_values_mass)
 
@@ -153,8 +184,6 @@ def animate_higgs_peak(values_ma,
                                      list_values_xs, num_bosons)
     if debug > 1:
         print "height", y_height
-
-    rf = ROOT.RooFit
 
     if debug > 2:
         # performance time measurement
@@ -165,18 +194,12 @@ def animate_higgs_peak(values_ma,
 
     ma_min = min(values_ma)
     ma_max = max(values_ma)
-    ma_range = ma_max - ma_min
-    x = ROOT.RooRealVar("x", "m / GeV", ma_min - ma_range, ma_max + ma_range)
-    x.setRange("integrate", ma_min - ma_range, ma_max + ma_range)
+    x = ROOT.RooRealVar("x", "m / GeV", ma_min, ma_max)
 
     canvas = ROOT.TCanvas("canvas", "canvas", 1300, 750)
     if log_scale is not False:
         canvas.SetLogy(1)
 
-    width = []
-    mean = []
-    pdf = []
-    sigma = []
     hist = []
 
     if debug > 2:
@@ -189,12 +212,6 @@ def animate_higgs_peak(values_ma,
     list_hist_names = ['sum'] + list_higgs_boson
     num_hists = num_bosons + 1
     num_bins_visible = 1000
-    for boson_index in range(num_bosons):
-        width.append(ROOT.RooRealVar("width", "width", 0))
-        mean.append(ROOT.RooRealVar("mean", "mean", 0))
-        sigma.append(ROOT.RooRealVar("sigma", "sigma", 0))
-        pdf.append(ROOT.RooVoigtian("voigtian", "Voigtian", x, mean[boson_index], width[boson_index],
-                                    sigma[boson_index]))
     for hist_nr in range(num_hists):
         hist.append(ROOT.TH1F(list_hist_names[hist_nr], "", num_bins_visible,
                               float(min(values_ma)), float(max(values_ma))))
@@ -220,34 +237,33 @@ def animate_higgs_peak(values_ma,
 
         for boson_index in range(num_bosons):
             hist_index = boson_index + 1
-            mean[boson_index].setVal(list_values_mass[boson_index][ma_index])
-            width[boson_index].setVal(list_values_width[boson_index][ma_index])
+
             if sigma_gaussian is None:
                 # default sigma is 20% of mean value
-                sigma[boson_index].setVal(list_values_mass[boson_index][ma_index] * 0.2)
+                sigma_val = list_values_mass[boson_index][ma_index] * 0.2
             elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
                 # sigma can be specified in percent of mean value
-                sigma[boson_index].setVal(list_values_mass[boson_index][ma_index] * float(sigma_gaussian[:-1]) / 100.0)
+                sigma_val = list_values_mass[boson_index][ma_index] * float(sigma_gaussian[:-1]) / 100.0
             else:
                 # sigma is fixed and absolute
-                sigma[boson_index].setVal(float(sigma_gaussian))
+                sigma_val = float(sigma_gaussian)
 
             # fill TH1F histograms with vales from pdf
-            num_bins_visible = hist[boson_index].GetNbinsX() - 2
+            num_bins_visible = hist[boson_index].GetNbinsX()
             for bin_index in xrange(num_bins_visible):
-                x.setVal(get_ma_val(values_ma, bin_index, num_bins_visible))
-                val = pdf[boson_index].getVal(ROOT.RooArgSet(x))
+                val = voigt_scipy(get_ma_val(values_ma, bin_index, num_bins_visible),
+                                  list_values_mass[boson_index][ma_index],
+                                  list_values_width[boson_index][ma_index],
+                                  sigma_val)
                 # hist_index = boson_index + 1
                 hist[hist_index].SetBinContent(bin_index + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
-            norm_area = list_values_xs[boson_index][ma_index] * 10 * (10 ** -15)
+            norm_area = list_values_xs[boson_index][ma_index] * lumi * (10 ** 3)
             # multiply by branching ratio, if decay branch was chosen
             if len(list_values_br) != 0:
-                print(str(list_values_br))
-                norm_area = norm_area * list_values_br[boson_index][ma_index]
-            scale_factor = norm_area / pdf[boson_index].createIntegral(ROOT.RooArgSet(x), "integrate").getVal()
-            hist[hist_index].Scale(scale_factor)
+                norm_area *= list_values_br[boson_index][ma_index]
+            hist[hist_index].Scale(norm_area)
 
         # set sum of histogram bin values as hist_sum histogram value
         for bin_nr in xrange(hist[0].GetNbinsX()):
