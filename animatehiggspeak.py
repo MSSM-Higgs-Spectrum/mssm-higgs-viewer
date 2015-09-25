@@ -5,6 +5,7 @@ import time
 import PIL.Image
 import images2gif
 import math
+import scipy.special
 
 
 def calc_max_voigt_height(width, sigma_gaussian, mass, br, xs, num_bosons, int_lumi=10):
@@ -90,6 +91,25 @@ def get_ma_val(ma_list, bin_index, nr_bins):
     ma_range = ma_max - ma_min
     ma_delta = float(ma_range) / float(nr_bins)
     return ma_min + (bin_index * ma_delta)
+
+
+def voigt_scipy(x, mean, gamma, sigma):
+    """
+    Voigt profile
+
+    calculte voigt using scipy.special.wofz(z).Imag
+    z = (x + i * gamma) / (sigma * sqrt(2)
+
+    :rtype: float
+    :param x: x value
+    :param mean: mean value
+    :param gamma: gamma value (Breit-Wiggner)
+    :param sigma: sigma value (Gaussian)
+    :return: voigt pdf value at x for given mean, gamma, sigma
+    """
+    z = ((x - mean) + (1j * gamma)) / (sigma * math.sqrt(2))
+    result = scipy.special.wofz(z).real / (sigma * math.sqrt(2 * math.pi))
+    return result
 
 
 def animate_higgs_peak(values_ma,
@@ -208,8 +228,6 @@ def animate_higgs_peak(values_ma,
     for ma_index in xrange(0, len(values_ma)):
         if ma_index > 141 and ma_index < 146:
             debug = 1000
-        else:
-            continue
 
         if debug > 2:
             # performance time measurement
@@ -217,17 +235,20 @@ def animate_higgs_peak(values_ma,
 
         for boson_index in range(num_bosons):
             hist_index = boson_index + 1
-            mean[boson_index].setVal(list_values_mass[boson_index][ma_index])
-            width[boson_index].setVal(list_values_width[boson_index][ma_index])
+
             if sigma_gaussian is None:
                 # default sigma is 20% of mean value
-                sigma[boson_index].setVal(list_values_mass[boson_index][ma_index] * 0.2)
+                sigma_val = list_values_mass[boson_index][ma_index] * 0.2
             elif (sigma_gaussian is not None) and (sigma_gaussian.find('%') >= 0):
                 # sigma can be specified in percent of mean value
-                sigma[boson_index].setVal(list_values_mass[boson_index][ma_index] * float(sigma_gaussian[:-1]) / 100.0)
+                sigma_val = list_values_mass[boson_index][ma_index] * float(sigma_gaussian[:-1]) / 100.0
             else:
                 # sigma is fixed and absolute
-                sigma[boson_index].setVal(float(sigma_gaussian))
+                sigma_val = float(sigma_gaussian)
+
+            mean[boson_index].setVal(list_values_mass[boson_index][ma_index])
+            width[boson_index].setVal(list_values_width[boson_index][ma_index])
+            sigma[boson_index].setVal(sigma_val)
 
             if debug > 4:
                 print "m =", mean[boson_index].getVal(), "w =", width[boson_index].getVal(), "s =", sigma[boson_index].getVal()
@@ -235,10 +256,21 @@ def animate_higgs_peak(values_ma,
             # fill TH1F histograms with vales from pdf
             num_bins_visible = hist[boson_index].GetNbinsX()
             for bin_index in xrange(num_bins_visible):
-                x.setVal(get_ma_val(values_ma, bin_index, num_bins_visible))
+                ma = get_ma_val(values_ma, bin_index, num_bins_visible)
+                x.setVal(ma)
                 val = pdf[boson_index].getVal(ROOT.RooArgSet(x))
+                val_scipy = voigt_scipy(ma, list_values_mass[boson_index][ma_index],
+                                        list_values_width[boson_index][ma_index], sigma_val)
+
+                print "Voigt val: root={0:1.10f}  scipy={1:1.10f}  Δ={2:1.10f}  *={3:1.10f}".format(val, val_scipy,
+                                                                                                   (val - val_scipy),
+                                                                                                   (val / val_scipy))
+
                 # hist_index = boson_index + 1
-                hist[hist_index].SetBinContent(bin_index + 1, val)
+                if boson_index >= 3:
+                    hist[hist_index].SetBinContent(bin_index + 1, val_scipy)
+                else:
+                    hist[hist_index].SetBinContent(bin_index + 1, val)
             # calculate normalization factor
             # get cross section from list, multiply by luminosity
             norm_area = list_values_xs[boson_index][ma_index] * lumi * (10 ** 3)
