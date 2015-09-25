@@ -107,8 +107,9 @@ def voigt_scipy(x, mean, gamma, sigma):
     :param sigma: sigma value (Gaussian)
     :return: voigt pdf value at x for given mean, gamma, sigma
     """
-    z = ((x - mean) + (1j * gamma)) / (sigma * math.sqrt(2))
-    result = scipy.special.wofz(z).real / (sigma * math.sqrt(2 * math.pi))
+    z = ((x - mean) + (1j * gamma)) / (sigma * math.sqrt(2 * math.pi))
+    faddeeva = scipy.special.wofz(z)
+    result = faddeeva.real / (sigma * math.sqrt(2 * math.pi))
     return result
 
 
