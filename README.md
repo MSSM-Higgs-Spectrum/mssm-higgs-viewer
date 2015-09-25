@@ -16,7 +16,7 @@ In the plot you can show the neutral Higgs bosons peaks in relation to a fixed t
 
 To use the mssm higgs viwer you need to have installed:
 
-* Python
+* Python with NumPy and PIL / Pillow
 * ROOT 5.34 with PyRoot and Roofit
 
 
@@ -66,6 +66,6 @@ The program was tested on Ubuntu and Fedora Linux with Root version 5.34.
 
 Used benchmark data: https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHXSWGMSSMNeutral
 
-Benchmark scenarios explenation: http://arxiv.org/abs/1302.7033
+Benchmark scenarios explanation: http://arxiv.org/abs/1302.7033
 
 ROOT: https://root.cern.ch/
